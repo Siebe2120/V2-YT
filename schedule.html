@@ -444,15 +444,48 @@ body::after {
     });
   }
 
+  function buildOutlookRow(ev) {
+    const li = document.createElement('li');
+    li.className = 'gm-row';
+
+    const time = document.createElement('span');
+    time.className = 'gm-time';
+    const startDt = ev.start && ev.start.dateTime;
+    time.textContent = ev.isAllDay ? 'All day' : (startDt ? formatTimeLabel(startDt.slice(11, 16)) : '');
+    li.appendChild(time);
+
+    const text = document.createElement('span');
+    text.className = 'gm-text';
+    text.style.cursor = 'default';
+    text.textContent = ev.subject || '(no title)';
+    li.appendChild(text);
+
+    const tag = document.createElement('span');
+    tag.className = 'ol-tag';
+    tag.textContent = 'Outlook';
+    li.appendChild(tag);
+
+    return li;
+  }
+
   function renderWeekList() {
     const week = loadWeek();
-    const events = sortedEvents(week[activeDay] || []);
+    const localEvents = sortedEvents(week[activeDay] || []);
+    const outlookEvents = (window.__outlookWeek && window.__outlookWeek[activeDay]) || [];
     const listEl = document.getElementById('weekList');
     const emptyEl = document.getElementById('weekEmpty');
     listEl.innerHTML = '';
-    emptyEl.style.display = events.length === 0 ? 'block' : 'none';
+    emptyEl.style.display = (localEvents.length === 0 && outlookEvents.length === 0) ? 'block' : 'none';
 
-    events.forEach(ev => {
+    // Merge both sources into one chronological list, tagging each with its origin.
+    const combined = localEvents.map(ev => ({ kind: 'local', time: ev.time || '', ev }))
+      .concat(outlookEvents.map(ev => ({ kind: 'outlook', time: (ev.start && ev.start.dateTime ? ev.start.dateTime.slice(11, 16) : ''), ev })))
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    combined.forEach(item => {
+      if (item.kind === 'outlook') { listEl.appendChild(buildOutlookRow(item.ev)); return; }
+
+      const ev = item.ev;
       const li = document.createElement('li');
       li.className = 'gm-row';
 
@@ -481,8 +514,8 @@ body::after {
           if (next && next !== original) {
             const w = loadWeek();
             const list = w[activeDay] || [];
-            const item = list.find(e => e.id === ev.id);
-            if (item) { item.text = next; saveWeek(w); }
+            const item2 = list.find(e => e.id === ev.id);
+            if (item2) { item2.text = next; saveWeek(w); }
             renderWeekList();
           } else {
             text.textContent = original;
@@ -546,6 +579,10 @@ body::after {
   window.addEventListener('focus', () => { renderToday(); renderWeekList(); });
 
   window.addEventListener('storage', () => { renderToday(); renderWeekList(); });
+
+  // Outlook events for the current week land on window.__outlookWeek once
+  // the Outlook script (below) finishes a sync — re-render to pick them up.
+  window.addEventListener('outlook-week-synced', renderWeekList);
 })();
 </script>
 
@@ -640,21 +677,28 @@ body::after {
     return null;
   }
 
-  function todayRangeISO() {
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  function localDateKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+
+  // Monday..Sunday range covering "this week" (the only week the Weekly
+  // Schedule tabs can meaningfully show, since that template isn't date-specific).
+  function weekRangeISO() {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    return { start: start.toISOString(), end: end.toISOString() };
+    const offset = (now.getDay() + 6) % 7; // days since Monday
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset, 0, 0, 0);
+    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6, 23, 59, 59);
+    return { start: monday.toISOString(), end: sunday.toISOString() };
   }
 
-  async function fetchOutlookEvents(t) {
-    const { start, end } = todayRangeISO();
+  async function fetchOutlookWeekEvents(t) {
+    const { start, end } = weekRangeISO();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const params = new URLSearchParams({
       startDateTime: start,
       endDateTime: end,
       '$orderby': 'start/dateTime',
-      '$top': '25',
+      '$top': '250',
     });
     const r = await fetch('https://graph.microsoft.com/v1.0/me/calendarview?' + params.toString(), {
       headers: {
@@ -664,12 +708,32 @@ body::after {
     });
     if (r.status === 401) {
       const n = await outlookRefresh(t);
-      if (n) return fetchOutlookEvents(n);
+      if (n) return fetchOutlookWeekEvents(n);
       throw new Error('unauthorized');
     }
     if (!r.ok) throw new Error('graph ' + r.status);
     const data = await r.json();
     return Array.isArray(data.value) ? data.value : [];
+  }
+
+  // The 'Prefer: outlook.timezone' header makes Graph return start.dateTime
+  // as a naive local-time string (e.g. '2026-07-06T09:00:00.0000000'), so we
+  // read the weekday straight off the date part instead of re-parsing tz.
+  function weekdayOfEvent(ev) {
+    const dt = ev.start && ev.start.dateTime;
+    if (!dt) return null;
+    const [y, m, d] = dt.slice(0, 10).split('-').map(Number);
+    return DAYS[(new Date(y, m - 1, d).getDay() + 6) % 7];
+  }
+
+  function bucketByWeekday(events) {
+    const buckets = {};
+    DAYS.forEach(d => { buckets[d] = []; });
+    events.forEach(ev => {
+      const day = weekdayOfEvent(ev);
+      if (day) buckets[day].push(ev);
+    });
+    return buckets;
   }
 
   function renderEvents(events) {
@@ -706,8 +770,17 @@ body::after {
     if (!t || !t.access) return;
     if (t.expires && Date.now() > t.expires - 60000) { const n = await outlookRefresh(t); if (n) t = n; }
     try {
-      const events = await fetchOutlookEvents(t);
-      renderEvents(events);
+      const events = await fetchOutlookWeekEvents(t);
+
+      // Feed the Weekly Schedule tabs (main script, separate closure).
+      window.__outlookWeek = bucketByWeekday(events);
+      window.dispatchEvent(new Event('outlook-week-synced'));
+
+      // Today card in this section still shows just today's subset.
+      const todayKey = localDateKey(new Date());
+      const todayEvents = events.filter(ev => ev.start && ev.start.dateTime && ev.start.dateTime.slice(0, 10) === todayKey);
+      renderEvents(todayEvents);
+
       localStorage.setItem(SYNC_KEY, String(Date.now()));
       renderStatus();
     } catch (e) { renderStatus(e); }
