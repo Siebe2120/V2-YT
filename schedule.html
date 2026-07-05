@@ -234,6 +234,31 @@ body::after {
 }
 .day-tab.is-today::after { content: ' •'; color: var(--success); }
 
+/* Outlook connect card */
+.ol-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ol-status { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.ol-status .ol-dot { width: 8px; height: 8px; border-radius: 50%; background: #76746E; }
+.ol-status.on .ol-dot { background: var(--success); box-shadow: 0 0 8px rgba(107,227,164,0.7); }
+.ol-sync { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+.ol-tag {
+  flex-shrink: 0;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #7DD3FC;
+  background: rgba(125,211,252,0.12);
+  border: 1px solid rgba(125,211,252,0.24);
+  border-radius: 6px;
+  padding: 3px 6px;
+}
+.ol-action {
+  width: 100%; margin-top: 14px; padding: 11px;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px; background: rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ol-action:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); }
+
 @media (max-width: 480px) {
   body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
   .gm-card { padding: 16px; }
@@ -263,6 +288,20 @@ body::after {
       </div>
       <ul id="todayList" class="goal-list"></ul>
       <div id="todayEmpty" class="empty-state">Nothing scheduled today — add events in the weekly schedule below.</div>
+    </div>
+  </div>
+
+  <!-- OUTLOOK CALENDAR -->
+  <div class="section">
+    <div class="section-title">Outlook Calendar</div>
+    <div class="gm-card">
+      <div class="ol-row">
+        <span class="ol-status" id="olStatus"><span class="ol-dot"></span><span id="olStatusText">Not connected</span></span>
+        <span class="ol-sync" id="olSync"></span>
+      </div>
+      <ul id="olList" class="goal-list" style="margin-top:12px;"></ul>
+      <div id="olEmpty" class="empty-state" style="display:none;">No events on your Outlook calendar today.</div>
+      <button type="button" class="ol-action" id="olAction">Connect Outlook</button>
     </div>
   </div>
 
@@ -507,6 +546,201 @@ body::after {
   window.addEventListener('focus', () => { renderToday(); renderWeekList(); });
 
   window.addEventListener('storage', () => { renderToday(); renderWeekList(); });
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  // Outlook tokens stay on THIS device only (not cloud-synced) — same as
+  // the WHOOP integration elsewhere in this dashboard. Each device
+  // connects its own Microsoft account once via OAuth.
+  const OUTLOOK_KEY = 'outlook_tokens_v1';
+  const SYNC_KEY    = 'outlook_last_sync';
+  const CLIENT_ID   = window.DASH_OUTLOOK_CLIENT_ID || '';
+
+  function loadJSON(k, f) { try { return JSON.parse(localStorage.getItem(k)) || f; } catch (e) { return f; } }
+  function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function formatTimeLabel(hhmm) {
+    const [hStr, mStr] = (hhmm || '00:00').split(':');
+    let h = parseInt(hStr, 10) || 0;
+    const m = parseInt(mStr, 10) || 0;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + pad2(m) + ' ' + ampm;
+  }
+  function relTime(ts) {
+    if (!ts) return 'never';
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + ' min ago';
+    if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+    return Math.floor(s / 86400) + ' d ago';
+  }
+
+  // Pick up tokens Microsoft handed back via /api/outlook-callback's redirect hash.
+  (function captureHashTokens() {
+    if (window.location.hash.indexOf('outlook_access=') === -1) return;
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const access = params.get('outlook_access');
+    const refresh = params.get('outlook_refresh');
+    const expires = params.get('outlook_expires');
+    if (access) {
+      saveJSON(OUTLOOK_KEY, { access, refresh, expires: Number(expires) || (Date.now() + 3600000) });
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  })();
+
+  function els() {
+    return {
+      statusEl: document.getElementById('olStatus'),
+      txt:      document.getElementById('olStatusText'),
+      syncEl:   document.getElementById('olSync'),
+      action:   document.getElementById('olAction'),
+      list:     document.getElementById('olList'),
+      empty:    document.getElementById('olEmpty'),
+    };
+  }
+
+  function renderStatus(err) {
+    const { statusEl, txt, syncEl, action } = els();
+    const t = loadJSON(OUTLOOK_KEY, null);
+    if (!t || !t.access) {
+      statusEl.classList.remove('on');
+      txt.textContent = 'Not connected';
+      syncEl.textContent = '';
+      action.textContent = 'Connect Outlook';
+      return;
+    }
+    statusEl.classList.add('on');
+    txt.textContent = err ? 'Connected (sync failed)' : 'Connected';
+    const last = Number(localStorage.getItem(SYNC_KEY)) || 0;
+    syncEl.textContent = 'Last synced ' + relTime(last);
+    action.textContent = 'Sync now';
+  }
+
+  async function outlookRefresh(t) {
+    if (!t.refresh) return null;
+    try {
+      const r = await fetch('/api/outlook-refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: t.refresh }),
+      });
+      const j = await r.json();
+      if (j.access_token) {
+        const n = { access: j.access_token, refresh: j.refresh_token || t.refresh, expires: Date.now() + (j.expires_in || 3500) * 1000 };
+        saveJSON(OUTLOOK_KEY, n);
+        return n;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function todayRangeISO() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    return { start: start.toISOString(), end: end.toISOString() };
+  }
+
+  async function fetchOutlookEvents(t) {
+    const { start, end } = todayRangeISO();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const params = new URLSearchParams({
+      startDateTime: start,
+      endDateTime: end,
+      '$orderby': 'start/dateTime',
+      '$top': '25',
+    });
+    const r = await fetch('https://graph.microsoft.com/v1.0/me/calendarview?' + params.toString(), {
+      headers: {
+        'Authorization': 'Bearer ' + t.access,
+        'Prefer': 'outlook.timezone="' + tz + '"',
+      },
+    });
+    if (r.status === 401) {
+      const n = await outlookRefresh(t);
+      if (n) return fetchOutlookEvents(n);
+      throw new Error('unauthorized');
+    }
+    if (!r.ok) throw new Error('graph ' + r.status);
+    const data = await r.json();
+    return Array.isArray(data.value) ? data.value : [];
+  }
+
+  function renderEvents(events) {
+    const { list, empty } = els();
+    list.innerHTML = '';
+    empty.style.display = events.length === 0 ? 'block' : 'none';
+    events.forEach(ev => {
+      const li = document.createElement('li');
+      li.className = 'gm-row';
+
+      const time = document.createElement('span');
+      time.className = 'gm-time';
+      const startDt = ev.start && ev.start.dateTime;
+      time.textContent = ev.isAllDay ? 'All day' : (startDt ? formatTimeLabel(startDt.slice(11, 16)) : '');
+      li.appendChild(time);
+
+      const text = document.createElement('span');
+      text.className = 'gm-text';
+      text.style.cursor = 'default';
+      text.textContent = ev.subject || '(no title)';
+      li.appendChild(text);
+
+      const tag = document.createElement('span');
+      tag.className = 'ol-tag';
+      tag.textContent = 'Outlook';
+      li.appendChild(tag);
+
+      list.appendChild(li);
+    });
+  }
+
+  async function syncOutlook() {
+    let t = loadJSON(OUTLOOK_KEY, null);
+    if (!t || !t.access) return;
+    if (t.expires && Date.now() > t.expires - 60000) { const n = await outlookRefresh(t); if (n) t = n; }
+    try {
+      const events = await fetchOutlookEvents(t);
+      renderEvents(events);
+      localStorage.setItem(SYNC_KEY, String(Date.now()));
+      renderStatus();
+    } catch (e) { renderStatus(e); }
+  }
+
+  document.getElementById('olAction').addEventListener('click', () => {
+    const t = loadJSON(OUTLOOK_KEY, null);
+    if (!t || !t.access) {
+      if (!CLIENT_ID) {
+        alert("Outlook isn't configured yet — add OUTLOOK_CLIENT_ID / OUTLOOK_CLIENT_SECRET as Vercel env vars first.");
+        return;
+      }
+      const redirectUri = window.location.origin + '/api/outlook-callback';
+      const authUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?' + new URLSearchParams({
+        client_id: CLIENT_ID,
+        response_type: 'code',
+        redirect_uri: redirectUri,
+        response_mode: 'query',
+        scope: 'offline_access Calendars.Read',
+        state: 'schedule',
+      }).toString();
+      window.location.href = authUrl;
+      return;
+    }
+    document.getElementById('olAction').textContent = 'Syncing…';
+    syncOutlook();
+  });
+
+  renderStatus();
+  syncOutlook();
+  setInterval(syncOutlook, 5 * 60 * 1000); // poll every 5 min while the tab is open
+  window.addEventListener('focus', syncOutlook);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) syncOutlook(); });
 })();
 </script>
 

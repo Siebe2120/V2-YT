@@ -16,10 +16,12 @@
 export default function handler(req, res) {
   const url = process.env.SUPABASE_URL || '';
   const key = process.env.SUPABASE_ANON_KEY || '';
+  const outlookClientId = process.env.OUTLOOK_CLIENT_ID || '';
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store');
   res.status(200).send(
     'window.DASH_SUPABASE_URL=' + JSON.stringify(url) + ';' +
-    'window.DASH_SUPABASE_KEY=' + JSON.stringify(key) + ';'
+    'window.DASH_SUPABASE_KEY=' + JSON.stringify(key) + ';' +
+    'window.DASH_OUTLOOK_CLIENT_ID=' + JSON.stringify(outlookClientId) + ';'
   );
 }

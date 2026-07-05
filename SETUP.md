@@ -98,7 +98,37 @@ Replace the old URL/key in these files:
 
 ---
 
-## 4. Nova (AI mentor / gym coach) — optional
+## 4. Outlook Calendar (optional)
+
+Pulls today's events from your Outlook/Microsoft 365 calendar into the **Schedule** page,
+read-only, refreshed automatically every few minutes.
+
+1. Go to **portal.azure.com** → **Microsoft Entra ID** → **App registrations** → **New registration**.
+   - Name: anything, e.g. "Dashboard Outlook Sync".
+   - Supported account types: **Accounts in any organizational directory and personal Microsoft accounts**.
+   - Redirect URI: platform **Web**, value `https://your-app.vercel.app/api/outlook-callback`
+     (use your real Vercel domain).
+2. After creation, copy the **Application (client) ID**.
+3. **Certificates & secrets** → **New client secret** → copy the secret **value** (shown once).
+4. **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated permissions** →
+   add `Calendars.Read` and `offline_access` → **Add permissions**.
+5. In Vercel → **Settings → Environment Variables**, add:
+
+| Variable | Value |
+|---|---|
+| `OUTLOOK_CLIENT_ID` | your app's Application (client) ID |
+| `OUTLOOK_CLIENT_SECRET` | your app's client secret **value** |
+
+6. Redeploy, open the **Schedule** page → **Connect Outlook** → sign in with your Microsoft account.
+
+> The Client ID is served to the browser via `/api/config` (it's public info, safe to expose).
+> The Client Secret stays server-side only, used by `/api/outlook-callback` and
+> `/api/outlook-refresh`. Tokens are stored per-device (not cloud-synced), so each device you
+> open the dashboard on needs to connect once.
+
+---
+
+## 5. Nova (AI mentor / gym coach) — optional
 
 No setup or key in the repo. Each user **pastes their own Anthropic API key** on the
 **Nova** tile; it's stored only in their browser and sent straight to Anthropic. Get a key at
