@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="lock.js"></script>
+<script src="/api/config"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<title>Schedule · Siebe's Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
+
+<style>
+:root {
+  --text-primary: #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary: #76746E;
+  --success: #6BE3A4;
+  --warning: #F2C063;
+  --danger:  #FF6B6B;
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: #050506;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  padding: max(28px, env(safe-area-inset-top)) 20px 60px;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(circle at 82% 14%, rgba(224, 118, 88, 0.16), transparent 45%),
+    radial-gradient(circle at 18% 90%, rgba(180, 180, 200, 0.06), transparent 50%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: -2;
+  animation: drift 36s ease-in-out infinite alternate;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
+  background-size: 3px 3px;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes drift {
+  0%   { transform: translate3d(0,0,0); }
+  100% { transform: translate3d(-22px, 14px, 0); }
+}
+
+.page { max-width: 1100px; margin: 0 auto; }
+.dash-title {
+  margin: 0 0 14px;
+  font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
+  background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+@media (max-width: 480px) { .dash-title { font-size: 22px; } }
+
+.section { margin-top: 8px; }
+.section-title {
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px;
+}
+.section-title::before { content: ''; width: 18px; height: 1px; background: var(--text-tertiary); opacity: 0.6; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent); }
+
+.gm-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  overflow: hidden;
+}
+.gm-card.gm-all-done::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(107,227,164,0.10), transparent 60%);
+  pointer-events: none;
+}
+
+.gm-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.gm-header-left { display: flex; flex-direction: column; }
+.gm-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px; }
+.gm-progress-row { display: flex; align-items: baseline; gap: 6px; }
+.gm-progress-num { font-size: 42px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.045em; color: var(--text-primary); line-height: 1; }
+.gm-progress-total { font-family: var(--font-mono); font-size: 18px; color: var(--text-tertiary); }
+.gm-progress-label { font-size: 11px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); margin-left: 4px; }
+
+.goal-list { list-style: none; margin: 0; padding: 0; }
+.empty-state { text-align: center; font-size: 12px; font-style: italic; color: var(--text-tertiary); padding: 14px 0; }
+
+.gm-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; margin-bottom: 6px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  transition: background 0.2s, opacity 0.3s;
+}
+.gm-row:hover { background: rgba(255,255,255,0.06); }
+.gm-row.gm-row-done { opacity: 0.45; background: rgba(107,227,164,0.04); }
+.gm-row.gm-row-done .gm-text { text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.4); }
+
+.gm-time {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 4px 8px;
+  min-width: 58px;
+  text-align: center;
+}
+
+.gm-check {
+  appearance: none; -webkit-appearance: none;
+  width: 22px; height: 22px; flex-shrink: 0; margin: 0;
+  border: 1.5px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.28); border-radius: 7px;
+  position: relative; cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.25s;
+}
+.gm-check:checked { background: var(--success); border-color: var(--success); box-shadow: 0 0 12px rgba(107,227,164,0.40); }
+.gm-check:checked::after {
+  content: ''; position: absolute; left: 6px; top: 2px;
+  width: 6px; height: 11px;
+  border: solid #0A0A0B; border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.gm-text {
+  flex: 1; font-size: 14px; color: var(--text-primary);
+  cursor: text; outline: none; border-radius: 4px; padding: 2px 4px; margin: -2px -4px;
+}
+.gm-text[contenteditable="true"] { outline: 1px solid rgba(255,255,255,0.18); background: rgba(0,0,0,0.28); }
+
+.goal-delete {
+  border: 0; background: transparent; color: var(--text-tertiary);
+  font-size: 18px; cursor: pointer; padding: 0 4px;
+  opacity: 0.5; transition: opacity 0.2s, color 0.2s;
+}
+.gm-row:hover .goal-delete { opacity: 1; }
+.goal-delete:hover { color: var(--danger); }
+
+.gm-input-wrap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); }
+.gm-input {
+  flex: 1; min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; background: rgba(0,0,0,0.28);
+  color: var(--text-primary);
+  font-family: inherit; font-size: 14px; outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.gm-input::placeholder { color: var(--text-tertiary); }
+.gm-input:focus { border-color: rgba(255,255,255,0.28); background: rgba(0,0,0,0.36); }
+.gm-time-input {
+  flex: 0 0 auto; width: 118px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; background: rgba(0,0,0,0.28);
+  color: var(--text-primary);
+  font-family: var(--font-mono); font-size: 13px; outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  color-scheme: dark;
+}
+.gm-time-input:focus { border-color: rgba(255,255,255,0.28); background: rgba(0,0,0,0.36); }
+
+.gm-add {
+  padding: 11px 20px; border: 0; border-radius: 12px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #E8E5DD 100%);
+  color: #0A0A0B; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.35), 0 8px 22px rgba(0,0,0,0.25);
+  transition: transform 0.1s, filter 0.15s;
+}
+.gm-add:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.gm-add:active { transform: translateY(0); }
+
+/* Day tabs for the weekly schedule */
+.day-tabs {
+  display: flex; gap: 6px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.day-tabs::-webkit-scrollbar { display: none; }
+.day-tab {
+  flex-shrink: 0;
+  padding: 9px 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.03);
+  color: var(--text-tertiary);
+  font-family: inherit; font-size: 12.5px; font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.day-tab:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.18); }
+.day-tab.is-active {
+  background: rgba(255,255,255,0.12);
+  color: var(--text-primary);
+  border-color: rgba(255,255,255,0.24);
+}
+.day-tab.is-today::after { content: ' •'; color: var(--success); }
+
+@media (max-width: 480px) {
+  body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
+  .gm-card { padding: 16px; }
+  .gm-progress-num { font-size: 36px; }
+  .gm-time-input { width: 100px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1 class="dash-title">Schedule</h1>
+
+  <!-- TODAY -->
+  <div class="section">
+    <div class="section-title">Today</div>
+    <div class="gm-card" id="todayCard">
+      <div class="gm-header">
+        <div class="gm-header-left">
+          <div class="gm-eyebrow" id="todayLabel">Today —</div>
+          <div class="gm-progress-row">
+            <span class="gm-progress-num" id="todayProgressNum">0</span>
+            <span class="gm-progress-total" id="todayProgressTotal">/ 0</span>
+            <span class="gm-progress-label" id="todayProgressLabel">no events yet</span>
+          </div>
+        </div>
+      </div>
+      <ul id="todayList" class="goal-list"></ul>
+      <div id="todayEmpty" class="empty-state">Nothing scheduled today — add events in the weekly schedule below.</div>
+    </div>
+  </div>
+
+  <!-- WEEKLY SCHEDULE -->
+  <div class="section">
+    <div class="section-title">Weekly Schedule</div>
+    <div class="gm-card">
+      <div class="day-tabs" id="dayTabs"></div>
+      <ul id="weekList" class="goal-list"></ul>
+      <div id="weekEmpty" class="empty-state">No events for this day yet.</div>
+      <div class="gm-input-wrap">
+        <input class="gm-time-input" id="weekTimeInput" type="time" value="09:00">
+        <input class="gm-input" id="weekTextInput" type="text" placeholder="Add an event…" autocomplete="off">
+        <button type="button" class="gm-add" id="weekAddBtn">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const DAY_FULL = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
+
+  const WEEK_KEY = 'schedule:week';
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function dateToKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function todayDateKey() { return dateToKey(new Date()); }
+  function doneKey(dateKey) { return 'schedule:done:' + dateKey; }
+  function weekdayOf(d) { return DAYS[(d.getDay() + 6) % 7]; }
+  function formatDate(d) {
+    const wk = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+    const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+    return wk + ', ' + mo + ' ' + d.getDate();
+  }
+  function formatTimeLabel(hhmm) {
+    const [hStr, mStr] = (hhmm || '00:00').split(':');
+    let h = parseInt(hStr, 10) || 0;
+    const m = parseInt(mStr, 10) || 0;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + pad2(m) + ' ' + ampm;
+  }
+
+  function loadWeek() {
+    let w = null;
+    try { w = JSON.parse(localStorage.getItem(WEEK_KEY)); } catch (e) {}
+    if (!w || typeof w !== 'object') w = {};
+    DAYS.forEach(d => { if (!Array.isArray(w[d])) w[d] = []; });
+    return w;
+  }
+  function saveWeek(w) { localStorage.setItem(WEEK_KEY, JSON.stringify(w)); }
+
+  function loadDone(dateKey) {
+    let arr = null;
+    try { arr = JSON.parse(localStorage.getItem(doneKey(dateKey))); } catch (e) {}
+    return Array.isArray(arr) ? arr : [];
+  }
+  function saveDone(dateKey, arr) { localStorage.setItem(doneKey(dateKey), JSON.stringify(arr)); }
+
+  function sortedEvents(list) {
+    return list.slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  }
+
+  function makeId() { return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  // ---------- Today ----------
+  function renderToday() {
+    const dateKey = todayDateKey();
+    const day = weekdayOf(new Date());
+    const week = loadWeek();
+    const events = sortedEvents(week[day] || []);
+    const done = loadDone(dateKey);
+
+    document.getElementById('todayLabel').textContent = 'Today — ' + formatDate(new Date());
+
+    const listEl = document.getElementById('todayList');
+    const emptyEl = document.getElementById('todayEmpty');
+    listEl.innerHTML = '';
+    emptyEl.style.display = events.length === 0 ? 'block' : 'none';
+
+    const doneCount = events.filter(e => done.indexOf(e.id) !== -1).length;
+    document.getElementById('todayProgressNum').textContent = doneCount;
+    document.getElementById('todayProgressTotal').textContent = '/ ' + events.length;
+    const label = document.getElementById('todayProgressLabel');
+    if (events.length === 0) label.textContent = 'no events yet';
+    else if (doneCount === events.length) label.textContent = 'all done';
+    else label.textContent = 'complete';
+    document.getElementById('todayCard').classList.toggle('gm-all-done', events.length > 0 && doneCount === events.length);
+
+    events.forEach(ev => {
+      const li = document.createElement('li');
+      li.className = 'gm-row' + (done.indexOf(ev.id) !== -1 ? ' gm-row-done' : '');
+
+      const time = document.createElement('span');
+      time.className = 'gm-time';
+      time.textContent = formatTimeLabel(ev.time);
+      li.appendChild(time);
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'gm-check';
+      cb.checked = done.indexOf(ev.id) !== -1;
+      cb.addEventListener('change', () => {
+        let d = loadDone(dateKey);
+        if (cb.checked) { if (d.indexOf(ev.id) === -1) d.push(ev.id); }
+        else { d = d.filter(id => id !== ev.id); }
+        saveDone(dateKey, d);
+        renderToday();
+      });
+      li.appendChild(cb);
+
+      const text = document.createElement('span');
+      text.className = 'gm-text';
+      text.textContent = ev.text;
+      li.appendChild(text);
+
+      listEl.appendChild(li);
+    });
+  }
+
+  // ---------- Weekly schedule ----------
+  let activeDay = weekdayOf(new Date());
+
+  function renderDayTabs() {
+    const wrap = document.getElementById('dayTabs');
+    wrap.innerHTML = '';
+    const todayD = weekdayOf(new Date());
+    DAYS.forEach(d => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'day-tab' + (d === activeDay ? ' is-active' : '') + (d === todayD ? ' is-today' : '');
+      btn.textContent = d;
+      btn.addEventListener('click', () => { activeDay = d; renderDayTabs(); renderWeekList(); });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function renderWeekList() {
+    const week = loadWeek();
+    const events = sortedEvents(week[activeDay] || []);
+    const listEl = document.getElementById('weekList');
+    const emptyEl = document.getElementById('weekEmpty');
+    listEl.innerHTML = '';
+    emptyEl.style.display = events.length === 0 ? 'block' : 'none';
+
+    events.forEach(ev => {
+      const li = document.createElement('li');
+      li.className = 'gm-row';
+
+      const time = document.createElement('span');
+      time.className = 'gm-time';
+      time.textContent = formatTimeLabel(ev.time);
+      li.appendChild(time);
+
+      const text = document.createElement('span');
+      text.className = 'gm-text';
+      text.textContent = ev.text;
+      text.addEventListener('click', () => {
+        if (text.getAttribute('contenteditable') === 'true') return;
+        const original = text.textContent;
+        text.setAttribute('contenteditable', 'true');
+        text.focus();
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges(); sel.addRange(range);
+
+        function commit() {
+          const next = text.textContent.trim();
+          text.removeAttribute('contenteditable');
+          if (next && next !== original) {
+            const w = loadWeek();
+            const list = w[activeDay] || [];
+            const item = list.find(e => e.id === ev.id);
+            if (item) { item.text = next; saveWeek(w); }
+            renderWeekList();
+          } else {
+            text.textContent = original;
+          }
+        }
+        function cancel() {
+          text.removeAttribute('contenteditable');
+          text.textContent = original;
+        }
+        text.addEventListener('blur', commit, { once: true });
+        text.addEventListener('keydown', function onKey(e) {
+          if (e.key === 'Enter') { e.preventDefault(); text.removeEventListener('keydown', onKey); text.blur(); }
+          else if (e.key === 'Escape') { e.preventDefault(); text.removeEventListener('keydown', onKey); cancel(); }
+        });
+      });
+      li.appendChild(text);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'goal-delete';
+      del.setAttribute('aria-label', 'Delete event');
+      del.textContent = '×';
+      del.addEventListener('click', () => {
+        const w = loadWeek();
+        w[activeDay] = (w[activeDay] || []).filter(e => e.id !== ev.id);
+        saveWeek(w);
+        renderWeekList();
+        renderToday();
+      });
+      li.appendChild(del);
+
+      listEl.appendChild(li);
+    });
+  }
+
+  document.getElementById('weekAddBtn').addEventListener('click', () => {
+    const timeInput = document.getElementById('weekTimeInput');
+    const textInput = document.getElementById('weekTextInput');
+    const text = textInput.value.trim();
+    if (!text) return;
+    const time = timeInput.value || '09:00';
+    const w = loadWeek();
+    w[activeDay] = w[activeDay] || [];
+    w[activeDay].push({ id: makeId(), time, text });
+    saveWeek(w);
+    textInput.value = '';
+    renderWeekList();
+    renderToday();
+  });
+  document.getElementById('weekTextInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('weekAddBtn').click(); }
+  });
+
+  // ---------- Boot ----------
+  renderDayTabs();
+  renderWeekList();
+  renderToday();
+
+  // Re-render at local midnight and on tab focus so "Today" stays current.
+  setInterval(renderToday, 60 * 1000);
+  window.addEventListener('focus', () => { renderToday(); renderWeekList(); });
+
+  window.addEventListener('storage', () => { renderToday(); renderWeekList(); });
+})();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof initCloudSync !== 'function') return;
+  initCloudSync({
+    appKey: 'schedule',
+    syncedPrefixes: ['schedule:'],
+    onApplied: function () {
+      window.dispatchEvent(new Event('storage'));
+    }
+  });
+});
+</script>
+</body>
+</html>
