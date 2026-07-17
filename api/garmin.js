@@ -59,6 +59,26 @@ async function safeGet(promise) {
   catch (e) { return { data: null, error: String(e && e.message ? e.message : e) }; }
 }
 
+function dateStrOffset(daysAgo) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().slice(0, 10);
+}
+
+// Same three (already-proven) endpoints as the "today" bundle, for one
+// past date. Days are fetched one at a time (not all 7 in parallel) to
+// keep peak concurrent requests against the unofficial API low — this is
+// a personal dashboard, not worth risking a rate-limit/bot-detection hit
+// over shaving a couple of seconds off a 5-minute-cached response.
+async function fetchDayMetrics(client, dateStr) {
+  const [sleep, hrv, trainingStatus] = await Promise.all([
+    safeGet(client.getSleepData(new Date(dateStr))),
+    safeGet(client.get(`${GC_API}/hrv-service/hrv/${dateStr}`)),
+    safeGet(client.get(`${GC_API}/metrics-service/metrics/trainingstatus/aggregated/${dateStr}`)),
+  ]);
+  return { date: dateStr, sleep: sleep.data, hrv: hrv.data, trainingStatus: trainingStatus.data };
+}
+
 export default async function handler(req, res) {
   try {
     const client = await getClient();
@@ -79,6 +99,13 @@ export default async function handler(req, res) {
       safeGet(client.getActivities(0, 10)),
     ]);
 
+    // 7-day history for the Score History sparklines (today + 6 prior days).
+    const history = [];
+    for (let i = 0; i < 7; i++) {
+      history.push(await fetchDayMetrics(client, dateStrOffset(i)));
+    }
+    history.reverse(); // oldest first, so charts read left-to-right
+
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({
       date,
@@ -88,6 +115,7 @@ export default async function handler(req, res) {
       hrv: hrv.data,
       sleep: sleep.data,
       activities: activities.data,
+      history,
       _errors: {
         readiness: readiness.error,
         bodyBattery: bodyBattery.error,

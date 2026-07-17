@@ -5,19 +5,25 @@
 <script src="/api/config"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#050506">
+<meta name="theme-color" content="#050807">
 <meta name="color-scheme" content="dark">
-<title>Health — Vitals</title>
+<title>Metrics · Siebe's Dashboard</title>
 <script src="topbar.js" defer></script>
 <style>
 :root {
-  --bg: #050506;
-  --text-primary: #FAFAFA;
-  --text-secondary: #B8B6B0;
-  --text-tertiary: #76746E;
-  --text-quaternary: #4D4B47;
+  --bg: #050807;
+  --text-primary: #F3FBF8;
+  --text-secondary: #9FBDB4;
+  --text-tertiary: #5A7871;
+  --text-quaternary: #3A524C;
+  --accent: #5EEAD4;
+  --accent-dim: #1F8F82;
+  --success: #5EEAD4;
+  --warning: #F2C063;
+  --danger: #FF6B6B;
 
   --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -36,15 +42,15 @@ body { min-height: 100vh; position: relative; overflow-x: hidden; }
 body::before {
   content: ''; position: fixed; inset: 0;
   background:
-    radial-gradient(60% 50% at 82% 14%, rgba(224, 118, 88, 0.16) 0%, transparent 60%),
-    radial-gradient(50% 40% at 18% 90%, rgba(180, 180, 200, 0.06) 0%, transparent 60%);
-  filter: blur(40px);
+    radial-gradient(60% 50% at 82% 10%, rgba(94,234,212,0.14) 0%, transparent 60%),
+    radial-gradient(50% 40% at 15% 92%, rgba(94,234,212,0.07) 0%, transparent 60%);
+  filter: blur(50px);
   pointer-events: none; z-index: 0;
   animation: drift 36s ease-in-out infinite alternate;
 }
 body::after {
   content: ''; position: fixed; inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px);
   background-size: 3px 3px;
   pointer-events: none; z-index: 1;
 }
@@ -57,50 +63,137 @@ main {
   padding-top: max(56px, env(safe-area-inset-top, 56px));
 }
 
-.section-title {
-  font-family: var(--font-mono);
-  font-size: 11px; font-weight: 600;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--text-tertiary);
-  margin: 0 4px 14px;
-  display: flex; align-items: center; gap: 12px;
-}
-.section-title::before { content: '≡'; font-size: 14px; opacity: 0.5; }
-
-.sleep-open-btn {
-  display: flex; align-items: center; gap: 14px;
+.dash-title {
+  font-family: var(--font-serif); font-style: italic; font-weight: 600;
+  font-size: 24px; letter-spacing: -0.01em;
+  color: var(--text-primary);
   margin: 0 0 24px;
-  padding: 16px 18px;
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.10), rgba(168, 162, 255, 0.08));
-  border: 1px solid rgba(168, 162, 255, 0.18);
-  border-radius: 16px;
-  text-decoration: none; color: var(--text-primary);
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s, transform 0.10s;
 }
-.sleep-open-btn:hover {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.16), rgba(168, 162, 255, 0.14));
+
+.mtitle {
+  font-family: var(--font-serif); font-style: italic; font-weight: 600;
+  font-size: 14px; color: var(--text-primary);
+  letter-spacing: 0.005em;
+  margin: 0 2px 14px;
+  display: flex; align-items: center; gap: 10px;
 }
-.sleep-open-btn:active { transform: scale(0.985); }
-.sleep-open-icon {
-  font-size: 22px; line-height: 1;
-  filter: grayscale(20%);
+.mtitle::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(94,234,212,0.20), transparent); }
+
+.section { margin-top: 8px; }
+
+/* ===== Score hero (ring + headline + tags) ===== */
+.score-hero {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 30px 22px 26px;
+  margin-bottom: 28px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, rgba(12,26,23,0.75) 0%, rgba(4,10,9,0.9) 100%);
+  border: 1px solid rgba(94,234,212,0.14);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
 }
-.sleep-open-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.sleep-open-title {
-  font-size: 14px; font-weight: 700; letter-spacing: 0.02em;
+.score-ring { position: relative; width: 168px; height: 168px; margin-bottom: 16px; }
+.score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.score-ring-track { fill: none; stroke: rgba(94,234,212,0.10); stroke-width: 9; }
+.score-ring-fill {
+  fill: none; stroke-width: 9; stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.22,1,0.36,1), stroke 0.4s;
 }
-.sleep-open-sub {
-  font-size: 11px; font-weight: 500;
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  letter-spacing: 0.08em; text-transform: uppercase;
+.score-ring-overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
-.sleep-open-chevron {
-  font-size: 22px; line-height: 1;
-  color: var(--text-tertiary);
-  font-weight: 300;
+.score-ring-num {
+  font-size: 46px; font-weight: 700; color: var(--text-primary);
+  letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums;
 }
+.score-ring-of { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 5px; }
+
+.score-pill {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 800; letter-spacing: 0.16em;
+  padding: 5px 14px; border-radius: 999px; border: 1px solid;
+  margin-bottom: 18px; text-transform: uppercase;
+}
+.score-pill.green  { color: #5EEAD4; border-color: rgba(94,234,212,0.5); background: rgba(94,234,212,0.10); }
+.score-pill.yellow { color: #F2C063; border-color: rgba(242,192,99,0.5); background: rgba(242,192,99,0.10); }
+.score-pill.red    { color: #FF8A8A; border-color: rgba(255,138,138,0.5); background: rgba(255,138,138,0.10); }
+
+.score-headline {
+  font-family: var(--font-serif); font-style: italic; font-size: 17px; line-height: 1.55;
+  color: var(--text-primary); max-width: 440px; margin: 0 0 18px;
+}
+.score-tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.score-tag {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 6px 12px 6px 10px; border-radius: 999px;
+  border: 1px solid rgba(94,234,212,0.20); background: rgba(94,234,212,0.04);
+  color: var(--text-secondary);
+}
+.score-tag .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 7px; flex-shrink: 0; }
+.score-tag.green .dot  { background: #5EEAD4; box-shadow: 0 0 6px rgba(94,234,212,0.7); }
+.score-tag.yellow .dot { background: #F2C063; box-shadow: 0 0 6px rgba(242,192,99,0.7); }
+.score-tag.red .dot    { background: #FF8A8A; box-shadow: 0 0 6px rgba(255,138,138,0.7); }
+
+.gd-err {
+  background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.28); color: #FF8A8A;
+  padding: 10px 12px; border-radius: 10px; font-size: 11.5px; font-family: var(--font-mono);
+  margin-bottom: 14px;
+}
+.gd-updated-row { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 10px; }
+.gd-updated { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
+.gd-refresh {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(94,234,212,0.05); border: 1px solid rgba(94,234,212,0.14);
+  color: var(--text-secondary); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.4s, background 0.18s, color 0.18s;
+}
+.gd-refresh:hover { background: rgba(94,234,212,0.12); color: var(--accent); }
+.gd-refresh.spin { transform: rotate(360deg); }
+
+/* ===== Today's Numbers ===== */
+.mstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 28px; }
+.mstat {
+  background: rgba(94,234,212,0.03); border: 1px solid rgba(94,234,212,0.08);
+  border-radius: 12px; padding: 12px 12px 11px;
+}
+.mstat-label {
+  font-size: 9.5px; color: var(--text-tertiary); text-transform: uppercase;
+  letter-spacing: 0.10em; font-weight: 700; margin-bottom: 8px;
+}
+.mstat-val { font-size: 19px; font-weight: 700; color: var(--text-primary); line-height: 1; font-variant-numeric: tabular-nums; }
+.mstat-unit { font-size: 10.5px; color: var(--text-tertiary); font-weight: 600; margin-left: 2px; }
+.mstat-bar { height: 4px; border-radius: 99px; background: rgba(255,255,255,0.06); margin-top: 9px; overflow: hidden; }
+.mstat-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width 0.6s cubic-bezier(0.22,1,0.36,1); }
+@media (max-width: 480px) { .mstats { grid-template-columns: repeat(2, 1fr); } }
+
+/* ===== Score History ===== */
+.hist-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+.hist-card {
+  background: rgba(94,234,212,0.03); border: 1px solid rgba(94,234,212,0.08);
+  border-radius: 14px; padding: 16px 18px;
+}
+.hist-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; gap: 10px; }
+.hist-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); }
+.hist-latest { font-size: 15px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hist-spark { width: 100%; height: 56px; display: block; }
+.hist-empty { font-size: 11px; font-style: italic; color: var(--text-tertiary); padding: 18px 0; text-align: center; }
+.hist-range { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--font-mono); font-size: 9.5px; color: var(--text-quaternary); }
+
+/* ===== Recent activities ===== */
+.gd-acts-eye { font-size: 10.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 12px; }
+.gd-act {
+  display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center;
+  padding: 11px 12px; border-radius: 10px;
+  background: rgba(94,234,212,0.03); border: 1px solid rgba(94,234,212,0.08);
+  margin-bottom: 6px;
+}
+.gd-act-icon { font-size: 18px; text-align: center; }
+.gd-act-body { min-width: 0; }
+.gd-act-name { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gd-act-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; font-family: var(--font-mono); }
+.gd-act-load { font-size: 15px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; text-align: right; }
+.gd-act-load-sub { font-size: 9px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; }
 
 .attribution {
   text-align: center; margin-top: 28px;
@@ -115,7 +208,7 @@ main {
   main { padding: 40px 16px 60px; }
 }
 
-::selection { background: rgba(224, 118, 88, 0.3); color: var(--text-primary); }
+::selection { background: rgba(94,234,212,0.3); color: var(--text-primary); }
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 999px; }
@@ -126,295 +219,414 @@ main {
 
 <main>
 
-<!-- ===== Garmin card ===== -->
-  <style>
-    .gd-section { margin-bottom: 32px; }
-    .gd-card {
-      padding: 22px 22px 18px;
-      background: rgba(255,255,255,0.025);
-      border-radius: 22px;
-      box-shadow: 0 1px 0 0 rgba(255,255,255,0.06) inset, 0 12px 40px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.25);
-    }
-    .gd-brand { display:inline-flex; align-items:center; gap:8px; }
-    .gd-brand-mark { width:22px; height:22px; border-radius:6px; background:#007CC3; color:#FFF; font-weight:900; font-size:12px; display:inline-flex; align-items:center; justify-content:center; letter-spacing:-0.04em; box-shadow:0 0 12px rgba(0,124,195,0.35); }
-    .gd-brand-text { font-weight:800; font-size:13px; letter-spacing:0.18em; color:var(--text-primary); }
-    .gd-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
-    .gd-head-right { display:flex; align-items:center; gap:10px; }
-    .gd-updated { font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono); }
-    .gd-refresh { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform 0.4s, background 0.18s, color 0.18s; }
-    .gd-refresh:hover { background:rgba(255,255,255,0.10); color:var(--text-primary); }
-    .gd-refresh.spin { transform:rotate(360deg); }
-    .gd-err { background:rgba(255,107,107,0.08); border:1px solid rgba(255,107,107,0.28); color:#FF8A8A; padding:10px 12px; border-radius:10px; font-size:11.5px; font-family:var(--font-mono); margin-bottom:14px; }
-    .gd-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-    .gd-stat { position:relative; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); border-radius:12px; padding:12px 10px; text-align:center; }
-    .gd-stat-label { font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.14em; font-weight:700; margin-bottom:8px; }
-    .gd-stat-val { font-size:19px; font-weight:700; color:var(--text-primary); line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
-    .gd-stat-sub { font-size:9.5px; color:var(--text-tertiary); margin-top:5px; font-family:var(--font-mono); }
-    @media (max-width:480px) { .gd-stats { grid-template-columns:repeat(2,1fr); } }
-    .gd-verdict { margin-top:18px; padding:16px 18px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); border-left:2px solid rgba(255,255,255,0.40); border-radius:0 12px 12px 0; }
-    .gd-verdict-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-    .gd-verdict-eye { font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.18em; font-weight:700; }
-    .gd-verdict-badge { font-size:9.5px; font-weight:800; padding:3px 9px; border-radius:999px; letter-spacing:0.14em; text-transform:uppercase; border:1px solid; }
-    .gd-verdict-badge.green  { color:#6BE3A4; border-color:rgba(107,227,164,0.50); background:rgba(107,227,164,0.10); }
-    .gd-verdict-badge.yellow { color:#F2C063; border-color:rgba(242,192,99,0.50); background:rgba(242,192,99,0.10); }
-    .gd-verdict-badge.red    { color:#FF8A8A; border-color:rgba(255,138,138,0.50); background:rgba(255,138,138,0.10); }
-    .gd-verdict-headline { font-size:15px; font-weight:600; color:var(--text-primary); line-height:1.4; }
-    .gd-acts { margin-top:22px; padding-top:22px; border-top:1px solid rgba(255,255,255,0.05); }
-    .gd-acts-eye { font-size:10px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:12px; }
-    .gd-act { display:grid; grid-template-columns:34px 1fr auto; gap:12px; align-items:center; padding:11px 12px; border-radius:10px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); margin-bottom:6px; }
-    .gd-act-icon { font-size:18px; text-align:center; }
-    .gd-act-body { min-width:0; }
-    .gd-act-name { font-size:13px; font-weight:600; color:var(--text-primary); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .gd-act-meta { font-size:11px; color:var(--text-tertiary); margin-top:2px; font-family:var(--font-mono); }
-    .gd-act-load { font-size:15px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; text-align:right; }
-    .gd-act-load-sub { font-size:9px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.1em; }
-  </style>
-  <div class="gd-section">
-    <div class="section-title">Garmin</div>
-    <div class="gd-card">
-      <div class="gd-head">
-        <div class="gd-brand"><span class="gd-brand-mark">G</span><span class="gd-brand-text">GARMIN CONNECT</span></div>
-        <div class="gd-head-right">
-          <span id="gdUpdated" class="gd-updated">—</span>
-          <button id="gdRefresh" class="gd-refresh" type="button" aria-label="Refresh"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 10"/></svg></button>
-        </div>
+  <h1 class="dash-title">Metrics</h1>
+
+  <div class="gd-updated-row">
+    <span id="gdUpdated" class="gd-updated">—</span>
+    <button id="gdRefresh" class="gd-refresh" type="button" aria-label="Refresh"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 10"/></svg></button>
+  </div>
+  <div id="gdErr" class="gd-err" style="display:none"></div>
+
+  <div class="score-hero">
+    <div class="score-ring">
+      <svg viewBox="0 0 168 168">
+        <circle class="score-ring-track" cx="84" cy="84" r="60"/>
+        <circle class="score-ring-fill" cx="84" cy="84" r="60" id="scoreRingFill"/>
+      </svg>
+      <div class="score-ring-overlay">
+        <div class="score-ring-num" id="scoreRingNum">—</div>
+        <div class="score-ring-of">OUT OF 100</div>
       </div>
-      <div id="gdErr" class="gd-err" style="display:none"></div>
-      <div class="gd-stats">
-        <div class="gd-stat"><div class="gd-stat-label">Readiness</div><div class="gd-stat-val" id="gdReadiness">—</div><div class="gd-stat-sub" id="gdReadinessSub">/ 100</div></div>
-        <div class="gd-stat"><div class="gd-stat-label">Body Battery</div><div class="gd-stat-val" id="gdBattery">—</div><div class="gd-stat-sub">/ 100</div></div>
-        <div class="gd-stat"><div class="gd-stat-label">Sleep</div><div class="gd-stat-val" id="gdSleep">—</div><div class="gd-stat-sub" id="gdSleepSub">duration</div></div>
-        <div class="gd-stat"><div class="gd-stat-label">Recovery</div><div class="gd-stat-val" id="gdRecovery">—</div><div class="gd-stat-sub">hrs left</div></div>
-        <div class="gd-stat"><div class="gd-stat-label">HRV Status</div><div class="gd-stat-val" id="gdHrvStatus">—</div><div class="gd-stat-sub" id="gdHrvSub">—</div></div>
-        <div class="gd-stat"><div class="gd-stat-label">Load</div><div class="gd-stat-val" id="gdLoad">—</div><div class="gd-stat-sub">acute</div></div>
-        <div class="gd-stat"><div class="gd-stat-label">Status</div><div class="gd-stat-val" id="gdStatus">—</div><div class="gd-stat-sub">training</div></div>
-        <div class="gd-stat"><div class="gd-stat-label">Sleep By</div><div class="gd-stat-val" id="gdBedtime">—</div><div class="gd-stat-sub" id="gdBedtimeSub">—</div></div>
+    </div>
+    <div class="score-pill" id="scorePill">—</div>
+    <div class="score-headline" id="scoreHeadline">Loading Garmin data…</div>
+    <div class="score-tags" id="scoreTags"></div>
+  </div>
+
+  <div class="section">
+    <div class="mtitle">Today's Numbers</div>
+    <div class="mstats">
+      <div class="mstat">
+        <div class="mstat-label">Sleep Score</div>
+        <div class="mstat-val" id="nSleep">—<span class="mstat-unit">%</span></div>
+        <div class="mstat-bar"><div class="mstat-bar-fill" id="nSleepBar"></div></div>
       </div>
-      <div class="gd-verdict" id="gdVerdict" style="display:none">
-        <div class="gd-verdict-head"><span class="gd-verdict-eye">Today's call</span><span id="gdVerdictBadge" class="gd-verdict-badge"></span></div>
-        <div id="gdVerdictHead" class="gd-verdict-headline"></div>
+      <div class="mstat">
+        <div class="mstat-label">HRV</div>
+        <div class="mstat-val" id="nHrv">—<span class="mstat-unit">ms</span></div>
       </div>
-      <div class="gd-acts" id="gdActs" style="display:none">
-        <div class="gd-acts-eye">Recent activities</div>
-        <div id="gdActList"></div>
+      <div class="mstat">
+        <div class="mstat-label">Resting HR</div>
+        <div class="mstat-val" id="nRhr">—<span class="mstat-unit">bpm</span></div>
+      </div>
+      <div class="mstat">
+        <div class="mstat-label">Training Load</div>
+        <div class="mstat-val" id="nLoad">—</div>
+      </div>
+      <div class="mstat">
+        <div class="mstat-label">Time Asleep</div>
+        <div class="mstat-val" id="nSleepDur" style="font-size:16px;">—</div>
+        <div class="mstat-bar"><div class="mstat-bar-fill" id="nSleepDurBar"></div></div>
+      </div>
+      <div class="mstat">
+        <div class="mstat-label">Body Battery</div>
+        <div class="mstat-val" id="nBattery">—<span class="mstat-unit">%</span></div>
+        <div class="mstat-bar"><div class="mstat-bar-fill" id="nBatteryBar"></div></div>
+      </div>
+      <div class="mstat">
+        <div class="mstat-label">Training Status</div>
+        <div class="mstat-val" id="nStatus" style="font-size:15px;">—</div>
+      </div>
+      <div class="mstat">
+        <div class="mstat-label">Sleep By</div>
+        <div class="mstat-val" id="nBedtime" style="font-size:15px;">—</div>
       </div>
     </div>
   </div>
-  <script>
-  (function () {
-    const $ = (id) => document.getElementById(id);
-    const errEl = $('gdErr');
-    function showErr(m) { errEl.textContent = m || ''; errEl.style.display = m ? 'block' : 'none'; }
 
-    // Garmin's numeric training-status codes, as commonly documented by
-    // community reverse-engineering of the (unofficial) Connect API.
-    const STATUS_LABELS = {
-      1: 'Declining', 2: 'Resting', 3: 'Maintaining',
-      4: 'Progressing', 5: 'Peaking', 6: 'Overreaching', 7: 'Unproductive'
-    };
+  <div class="section">
+    <div class="mtitle">Score History</div>
+    <div class="hist-grid">
+      <div class="hist-card">
+        <div class="hist-head"><span class="hist-label">Sleep Score · 7 Days</span><span class="hist-latest" id="histSleepLatest">—</span></div>
+        <div id="histSleepChart"></div>
+        <div class="hist-range" id="histSleepRange"></div>
+      </div>
+      <div class="hist-card">
+        <div class="hist-head"><span class="hist-label">Training Load · 7 Days</span><span class="hist-latest" id="histLoadLatest">—</span></div>
+        <div id="histLoadChart"></div>
+        <div class="hist-range" id="histLoadRange"></div>
+      </div>
+      <div class="hist-card">
+        <div class="hist-head"><span class="hist-label">HRV · 7 Days</span><span class="hist-latest" id="histHrvLatest">—</span></div>
+        <div id="histHrvChart"></div>
+        <div class="hist-range" id="histHrvRange"></div>
+      </div>
+    </div>
+  </div>
 
-    function num(v) { return (v === null || v === undefined || Number.isNaN(v)) ? null : v; }
-
-    // Every pick* function is defensive: these are undocumented endpoints,
-    // so field names are our best guess from public reverse-engineering
-    // write-ups, not a guaranteed contract. Missing fields fall back to
-    // "—" per stat instead of breaking the whole card.
-    function pickReadiness(raw) {
-      const r = Array.isArray(raw) ? raw[0] : raw;
-      if (!r) return {};
-      return {
-        score: num(r.score),
-        level: r.level || r.feedbackShort || null,
-        recoveryTime: num(r.recoveryTime != null ? r.recoveryTime : r.recoveryTimeHours),
-      };
-    }
-    function pickBodyBattery(raw) {
-      const day = Array.isArray(raw) ? raw[raw.length - 1] : raw;
-      const arr = day && (day.bodyBatteryValuesArray || day.bodyBatteryValueArray);
-      if (Array.isArray(arr) && arr.length) {
-        const last = arr[arr.length - 1];
-        const level = Array.isArray(last) ? last[1] : (last && last.level);
-        return num(level);
-      }
-      return null;
-    }
-    function pickHrv(raw) {
-      const s = raw && (raw.hrvSummary || raw);
-      if (!s) return {};
-      return {
-        status: s.status || s.hrvStatus || null,
-        lastNight: num(s.lastNightAvg != null ? s.lastNightAvg : s.weeklyAvg),
-      };
-    }
-    function pickTrainingStatus(raw) {
-      try {
-        const byDevice = raw && raw.mostRecentTrainingStatus && raw.mostRecentTrainingStatus.latestTrainingStatusData;
-        const first = byDevice && Object.values(byDevice)[0];
-        if (!first) return {};
-        const load = first.dailyTrainingLoadAcute != null
-          ? first.dailyTrainingLoadAcute
-          : (first.acuteTrainingLoadDTO && first.acuteTrainingLoadDTO.dailyTrainingLoadAcute);
-        return { label: STATUS_LABELS[first.trainingStatus] || first.trainingStatusFeedbackPhrase || null, load: num(load) };
-      } catch (e) { return {}; }
-    }
-    function pickSleep(raw) {
-      const d = raw && raw.dailySleepDTO;
-      if (!d) return {};
-      const score = d.sleepScores && d.sleepScores.overall && d.sleepScores.overall.value;
-      return { seconds: num(d.sleepTimeSeconds), score: num(score) };
-    }
-    function fmtHM(totalSeconds) {
-      if (totalSeconds == null) return '—';
-      const h = Math.floor(totalSeconds / 3600), m = Math.round((totalSeconds % 3600) / 60);
-      return h + 'h ' + m + 'm';
-    }
-    function fmtClock(h) {
-      h = ((h % 24) + 24) % 24;
-      let hr = Math.floor(h), m = Math.round((h - hr) * 60);
-      if (m === 60) { m = 0; hr = (hr + 1) % 24; }
-      const ap = hr >= 12 ? 'PM' : 'AM'; let h12 = hr % 12; if (h12 === 0) h12 = 12;
-      return h12 + ':' + String(m).padStart(2, '0') + ' ' + ap;
-    }
-
-    // Garmin's "Sleep Need" (suggested hours) isn't documented in the
-    // reverse-engineered libraries this integration is built on, so this
-    // tries a few plausible shapes within the same sleep payload we
-    // already fetch. Falls back to null (shown as "—") if none match —
-    // if it's always blank, the raw /api/garmin sleep object will show
-    // the real field name to fix this against.
-    function pickSleepNeedHours(sleepRaw) {
-      const d = sleepRaw && sleepRaw.dailySleepDTO;
-      const need = (d && d.sleepNeed) || (sleepRaw && sleepRaw.sleepNeed) || null;
-      if (!need) return null;
-      let hours = need.actual != null ? need.actual : (need.baseline != null ? need.baseline : need.total);
-      hours = num(hours);
-      if (hours == null) return null;
-      return hours > 24 ? hours / 60 : hours; // guard against a minutes-based value
-    }
-
-    // Bedtime tonight enables tomorrow's wake-up — only a Mon-Fri 7:30
-    // rule is defined so far (per your schedule); weekends fall back to "—".
-    function nextWakeHourForTonight() {
-      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      const day = tomorrow.getDay(); // 0=Sun..6=Sat
-      return (day >= 1 && day <= 5) ? 7.5 : null;
-    }
-
-    // "Today's call" — same idea as the old intervals.icu TSB verdict, but
-    // driven by Garmin's own Training Readiness score/level instead.
-    function pickVerdict(readiness) {
-      const score = readiness.score;
-      const level = (readiness.level || '').toUpperCase();
-      if (score == null && !level) return null;
-      if (level.indexOf('LOW') !== -1 || (score != null && score < 40)) {
-        return { cls: 'red', badge: 'LOW', headline: 'Low readiness — recovery day. Ease off and prioritize rest.' };
-      }
-      if (level.indexOf('HIGH') !== -1 || (score != null && score >= 70)) {
-        return { cls: 'green', badge: 'HIGH', headline: 'High readiness — good day to push. Go hard on the planned session.' };
-      }
-      return { cls: 'yellow', badge: 'MODERATE', headline: 'Moderate readiness. Train as planned, keep intensity controlled.' };
-    }
-
-    const ACT_ICONS = {
-      running: '🏃', trail_running: '🏃', treadmill_running: '🏃',
-      cycling: '🚴', road_biking: '🚴', mountain_biking: '🚴', indoor_cycling: '🚴',
-      swimming: '🏊', lap_swimming: '🏊', open_water_swimming: '🏊',
-      strength_training: '🏋️', fitness_equipment: '🏋️',
-      walking: '🚶', hiking: '🥾', yoga: '🧘', cardio_training: '❤️',
-    };
-    function actIcon(typeKey) { return ACT_ICONS[typeKey] || '📊'; }
-    function fmtDist(m) { if (!m) return ''; return (m / 1000).toFixed(1) + ' km'; }
-    function fmtDur(s) { if (!s) return ''; const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return (h > 0 ? h + 'h ' : '') + m + 'm'; }
-    function fmtActDate(d) { try { return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); } catch (e) { return ''; } }
-    function escapeHtml(str) { return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-
-    function renderActivities(acts) {
-      const list = (Array.isArray(acts) ? acts : []).slice(0, 10);
-      if (!list.length) { $('gdActs').style.display = 'none'; return; }
-      $('gdActs').style.display = '';
-      $('gdActList').innerHTML = list.map(a => {
-        const typeKey = a.activityType && a.activityType.typeKey;
-        const meta = [fmtActDate(a.startTimeLocal), fmtDist(a.distance), fmtDur(a.duration)].filter(Boolean).join(' · ');
-        const load = a.activityTrainingLoad != null ? Math.round(a.activityTrainingLoad) : '—';
-        const name = escapeHtml(a.activityName || typeKey || 'Activity');
-        return '<div class="gd-act">'
-          + '<div class="gd-act-icon">' + actIcon(typeKey) + '</div>'
-          + '<div class="gd-act-body"><div class="gd-act-name">' + name + '</div><div class="gd-act-meta">' + meta + '</div></div>'
-          + '<div><div class="gd-act-load">' + load + '</div><div class="gd-act-load-sub">load</div></div>'
-          + '</div>';
-      }).join('');
-    }
-
-    async function loadData() {
-      showErr('');
-      try {
-        const r = await fetch('/api/garmin');
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || ('garmin ' + r.status));
-
-        const readiness = pickReadiness(data.readiness);
-        const battery = pickBodyBattery(data.bodyBattery);
-        const hrv = pickHrv(data.hrv);
-        const status = pickTrainingStatus(data.trainingStatus);
-        const sleep = pickSleep(data.sleep);
-
-        $('gdReadiness').textContent = readiness.score != null ? readiness.score : '—';
-        $('gdReadinessSub').textContent = readiness.level || '/ 100';
-
-        $('gdBattery').textContent = battery != null ? battery : '—';
-
-        $('gdSleep').textContent = sleep.seconds != null ? fmtHM(sleep.seconds) : '—';
-        $('gdSleepSub').textContent = sleep.score != null ? ('score ' + sleep.score) : 'duration';
-
-        $('gdRecovery').textContent = readiness.recoveryTime != null ? readiness.recoveryTime : '—';
-
-        $('gdHrvStatus').textContent = hrv.status || '—';
-        $('gdHrvSub').textContent = hrv.lastNight != null ? (hrv.lastNight + ' ms') : '—';
-
-        $('gdLoad').textContent = status.load != null ? status.load : '—';
-
-        $('gdStatus').textContent = status.label || '—';
-
-        const sleepNeedHours = pickSleepNeedHours(data.sleep);
-        const nextWake = nextWakeHourForTonight();
-        if (sleepNeedHours != null && nextWake != null) {
-          $('gdBedtime').textContent = fmtClock(nextWake - sleepNeedHours);
-          $('gdBedtimeSub').textContent = sleepNeedHours.toFixed(1) + 'h for ' + fmtClock(nextWake) + ' wake';
-        } else {
-          $('gdBedtime').textContent = '—';
-          $('gdBedtimeSub').textContent = nextWake == null ? 'no weekday wake set' : 'sleep need unavailable';
-        }
-
-        const verdict = pickVerdict(readiness);
-        if (verdict) {
-          $('gdVerdict').style.display = '';
-          const badge = $('gdVerdictBadge');
-          badge.textContent = verdict.badge;
-          badge.className = 'gd-verdict-badge ' + verdict.cls;
-          $('gdVerdictHead').textContent = verdict.headline;
-        } else {
-          $('gdVerdict').style.display = 'none';
-        }
-
-        renderActivities(data.activities);
-
-        $('gdUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-      } catch (e) {
-        showErr(e.message || String(e));
-      }
-    }
-
-    $('gdRefresh').addEventListener('click', async (e) => {
-      const btn = e.currentTarget; btn.classList.add('spin');
-      try { await loadData(); } finally { setTimeout(() => btn.classList.remove('spin'), 600); }
-    });
-
-    loadData();
-  })();
-  </script>
+  <div class="section" id="gdActs" style="display:none">
+    <div class="mtitle">Recent Activities</div>
+    <div id="gdActList"></div>
+  </div>
 
   <div class="attribution">// metrics + recent workouts · all data stays in your browser</div>
 </main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const errEl = $('gdErr');
+  function showErr(m) { errEl.textContent = m || ''; errEl.style.display = m ? 'block' : 'none'; }
+
+  // Garmin's numeric training-status codes, as commonly documented by
+  // community reverse-engineering of the (unofficial) Connect API.
+  const STATUS_LABELS = {
+    1: 'Declining', 2: 'Resting', 3: 'Maintaining',
+    4: 'Progressing', 5: 'Peaking', 6: 'Overreaching', 7: 'Unproductive'
+  };
+
+  function num(v) { return (v === null || v === undefined || Number.isNaN(v)) ? null : v; }
+
+  // Every pick* function is defensive: these are undocumented endpoints,
+  // so field names are our best guess from public reverse-engineering
+  // write-ups, not a guaranteed contract. Missing fields fall back to
+  // "—" per stat instead of breaking the whole page.
+  function pickReadiness(raw) {
+    const r = Array.isArray(raw) ? raw[0] : raw;
+    if (!r) return {};
+    return {
+      score: num(r.score),
+      level: r.level || r.feedbackShort || null,
+      feedback: r.feedbackLong || r.feedbackShort || null,
+      recoveryTime: num(r.recoveryTime != null ? r.recoveryTime : r.recoveryTimeHours),
+    };
+  }
+  function pickBodyBattery(raw) {
+    const day = Array.isArray(raw) ? raw[raw.length - 1] : raw;
+    const arr = day && (day.bodyBatteryValuesArray || day.bodyBatteryValueArray);
+    if (Array.isArray(arr) && arr.length) {
+      const last = arr[arr.length - 1];
+      const level = Array.isArray(last) ? last[1] : (last && last.level);
+      return num(level);
+    }
+    return null;
+  }
+  function pickHrv(raw) {
+    const s = raw && (raw.hrvSummary || raw);
+    if (!s) return {};
+    return {
+      status: s.status || s.hrvStatus || null,
+      lastNight: num(s.lastNightAvg != null ? s.lastNightAvg : s.weeklyAvg),
+    };
+  }
+  function pickTrainingStatus(raw) {
+    try {
+      const byDevice = raw && raw.mostRecentTrainingStatus && raw.mostRecentTrainingStatus.latestTrainingStatusData;
+      const first = byDevice && Object.values(byDevice)[0];
+      if (!first) return {};
+      const load = first.dailyTrainingLoadAcute != null
+        ? first.dailyTrainingLoadAcute
+        : (first.acuteTrainingLoadDTO && first.acuteTrainingLoadDTO.dailyTrainingLoadAcute);
+      return { label: STATUS_LABELS[first.trainingStatus] || first.trainingStatusFeedbackPhrase || null, load: num(load) };
+    } catch (e) { return {}; }
+  }
+  function pickSleep(raw) {
+    const d = raw && raw.dailySleepDTO;
+    if (!d) return {};
+    const score = d.sleepScores && d.sleepScores.overall && d.sleepScores.overall.value;
+    return { seconds: num(d.sleepTimeSeconds), score: num(score) };
+  }
+  function pickRestingHR(raw) { return num(raw && raw.restingHeartRate); }
+
+  function fmtHM(totalSeconds) {
+    if (totalSeconds == null) return '—';
+    const h = Math.floor(totalSeconds / 3600), m = Math.round((totalSeconds % 3600) / 60);
+    return h + 'h ' + m + 'm';
+  }
+  function fmtClock(h) {
+    h = ((h % 24) + 24) % 24;
+    let hr = Math.floor(h), m = Math.round((h - hr) * 60);
+    if (m === 60) { m = 0; hr = (hr + 1) % 24; }
+    const ap = hr >= 12 ? 'PM' : 'AM'; let h12 = hr % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + String(m).padStart(2, '0') + ' ' + ap;
+  }
+
+  // Garmin's "Sleep Need" (suggested hours) isn't documented in the
+  // reverse-engineered libraries this integration is built on, so this
+  // tries a few plausible shapes within the same sleep payload we
+  // already fetch. Falls back to null (shown as "—") if none match —
+  // if it's always blank, the raw /api/garmin sleep object will show
+  // the real field name to fix this against.
+  function pickSleepNeedHours(sleepRaw) {
+    const d = sleepRaw && sleepRaw.dailySleepDTO;
+    const need = (d && d.sleepNeed) || (sleepRaw && sleepRaw.sleepNeed) || null;
+    if (!need) return null;
+    let hours = need.actual != null ? need.actual : (need.baseline != null ? need.baseline : need.total);
+    hours = num(hours);
+    if (hours == null) return null;
+    return hours > 24 ? hours / 60 : hours; // guard against a minutes-based value
+  }
+
+  // Bedtime tonight enables tomorrow's wake-up — only a Mon-Fri 7:30
+  // rule is defined so far (per your schedule); weekends fall back to "—".
+  function nextWakeHourForTonight() {
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    const day = tomorrow.getDay(); // 0=Sun..6=Sat
+    return (day >= 1 && day <= 5) ? 7.5 : null;
+  }
+
+  /* ---------- Score ring + pill + headline + tags ---------- */
+  const RING_C = 2 * Math.PI * 60;
+  function scoreColor(score) {
+    if (score == null) return '#5EEAD4';
+    if (score < 40) return '#FF8A8A';
+    if (score < 70) return '#F2C063';
+    return '#5EEAD4';
+  }
+  function updateRing(score) {
+    const fill = $('scoreRingFill');
+    fill.setAttribute('stroke-dasharray', RING_C);
+    if (score == null) {
+      fill.setAttribute('stroke-dashoffset', RING_C);
+      fill.style.stroke = 'rgba(94,234,212,0.25)';
+      $('scoreRingNum').textContent = '—';
+      return;
+    }
+    const pct = Math.max(0, Math.min(100, score));
+    fill.setAttribute('stroke-dashoffset', RING_C * (1 - pct / 100));
+    fill.style.stroke = scoreColor(score);
+    $('scoreRingNum').textContent = Math.round(score);
+  }
+  function scoreBand(readiness) {
+    const score = readiness.score;
+    const level = (readiness.level || '').toUpperCase();
+    if (level.indexOf('LOW') !== -1 || (score != null && score < 40)) return 'red';
+    if (level.indexOf('HIGH') !== -1 || (score != null && score >= 70)) return 'green';
+    if (score != null || level) return 'yellow';
+    return null;
+  }
+  function updatePill(readiness) {
+    const band = scoreBand(readiness);
+    const el = $('scorePill');
+    const labels = { red: 'Recover', yellow: 'Maintain', green: 'Ready' };
+    el.textContent = band ? labels[band] : '—';
+    el.className = 'score-pill' + (band ? ' ' + band : '');
+  }
+  function buildHeadline(readiness) {
+    if (readiness.feedback) return readiness.feedback;
+    if (readiness.score != null) {
+      let base;
+      if (readiness.score < 40) base = 'Recovery is behind — keep today easy and prioritize sleep tonight.';
+      else if (readiness.score >= 70) base = "You're well recovered — a strong day to push your training.";
+      else base = 'Recovery is in a normal range — train as planned, listen to how you feel.';
+      if (readiness.recoveryTime != null && readiness.recoveryTime > 0) {
+        base += ' About ' + readiness.recoveryTime + 'h until fully recovered.';
+      }
+      return base;
+    }
+    return 'Connect Garmin (GARMIN_EMAIL/GARMIN_PASSWORD on Vercel) to see your daily readiness call.';
+  }
+  function buildTags(readiness, hrv, status, battery) {
+    const tags = [];
+    const band = scoreBand(readiness);
+    if (band) tags.push({ cls: band, text: band === 'red' ? 'Low Readiness' : band === 'green' ? 'High Readiness' : 'Moderate Readiness' });
+    if (hrv.status) {
+      const s = hrv.status.toUpperCase();
+      let cls = 'yellow';
+      if (s.indexOf('BALANCED') !== -1 && s.indexOf('UN') === -1) cls = 'green';
+      else if (s.indexOf('LOW') !== -1 || s.indexOf('UNBALANCED') !== -1) cls = 'red';
+      tags.push({ cls, text: hrv.status.charAt(0).toUpperCase() + hrv.status.slice(1).toLowerCase() + ' HRV' });
+    }
+    if (battery != null) {
+      if (battery < 30) tags.push({ cls: 'red', text: 'Low Body Battery' });
+      else if (battery >= 70) tags.push({ cls: 'green', text: 'High Body Battery' });
+    }
+    if (status.label) tags.push({ cls: 'yellow', text: status.label });
+    return tags.slice(0, 4);
+  }
+  function renderTags(tags) {
+    $('scoreTags').innerHTML = tags.map(t =>
+      '<span class="score-tag ' + t.cls + '"><span class="dot"></span>' + t.text + '</span>'
+    ).join('');
+  }
+
+  /* ---------- Today's Numbers ---------- */
+  function setBar(id, pct) {
+    const el = $(id);
+    if (!el) return;
+    el.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  }
+
+  /* ---------- Score History (7-day sparklines) ---------- */
+  function buildSparkline(values) {
+    const W = 280, H = 56, pad = 6;
+    const valid = values.map((v, i) => ({ i, v })).filter(p => p.v != null);
+    if (!valid.length) return '<div class="hist-empty">No data yet</div>';
+    const nums = valid.map(p => p.v);
+    const min = Math.min(...nums), max = Math.max(...nums);
+    const range = (max - min) || 1;
+    const n = values.length;
+    const x = (i) => pad + (n === 1 ? 0 : (i / (n - 1)) * (W - pad * 2));
+    const y = (v) => H - pad - ((v - min) / range) * (H - pad * 2);
+    let path = '', dots = '';
+    valid.forEach((p) => {
+      const px = x(p.i).toFixed(1), py = y(p.v).toFixed(1);
+      path += (path ? ' L ' : 'M ') + px + ' ' + py;
+      dots += '<circle cx="' + px + '" cy="' + py + '" r="2.5" fill="#5EEAD4" />';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="hist-spark" preserveAspectRatio="none">'
+      + '<path d="' + path + '" fill="none" stroke="#5EEAD4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+      + dots + '</svg>';
+  }
+  function fillHistCard(prefix, values, unit) {
+    let latest = null;
+    for (let i = values.length - 1; i >= 0; i--) { if (values[i] != null) { latest = values[i]; break; } }
+    $(prefix + 'Latest').textContent = latest != null ? (latest + (unit || '')) : '—';
+    $(prefix + 'Chart').innerHTML = buildSparkline(values);
+    const valid = values.filter(v => v != null);
+    $(prefix + 'Range').textContent = valid.length
+      ? ('Low ' + Math.min(...valid) + (unit || '') + ' · High ' + Math.max(...valid) + (unit || ''))
+      : '';
+  }
+  function renderHistory(history) {
+    if (!Array.isArray(history) || !history.length) return;
+    fillHistCard('histSleep', history.map(h => pickSleep(h.sleep).score), '');
+    fillHistCard('histLoad', history.map(h => pickTrainingStatus(h.trainingStatus).load), '');
+    fillHistCard('histHrv', history.map(h => pickHrv(h.hrv).lastNight), ' ms');
+  }
+
+  /* ---------- Recent activities ---------- */
+  const ACT_ICONS = {
+    running: '🏃', trail_running: '🏃', treadmill_running: '🏃',
+    cycling: '🚴', road_biking: '🚴', mountain_biking: '🚴', indoor_cycling: '🚴',
+    swimming: '🏊', lap_swimming: '🏊', open_water_swimming: '🏊',
+    strength_training: '🏋️', fitness_equipment: '🏋️',
+    walking: '🚶', hiking: '🥾', yoga: '🧘', cardio_training: '❤️',
+  };
+  function actIcon(typeKey) { return ACT_ICONS[typeKey] || '📊'; }
+  function fmtDist(m) { if (!m) return ''; return (m / 1000).toFixed(1) + ' km'; }
+  function fmtDur(s) { if (!s) return ''; const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return (h > 0 ? h + 'h ' : '') + m + 'm'; }
+  function fmtActDate(d) { try { return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); } catch (e) { return ''; } }
+  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+  function renderActivities(acts) {
+    const list = (Array.isArray(acts) ? acts : []).slice(0, 10);
+    if (!list.length) { $('gdActs').style.display = 'none'; return; }
+    $('gdActs').style.display = '';
+    $('gdActList').innerHTML = list.map(a => {
+      const typeKey = a.activityType && a.activityType.typeKey;
+      const meta = [fmtActDate(a.startTimeLocal), fmtDist(a.distance), fmtDur(a.duration)].filter(Boolean).join(' · ');
+      const load = a.activityTrainingLoad != null ? Math.round(a.activityTrainingLoad) : '—';
+      const name = escapeHtml(a.activityName || typeKey || 'Activity');
+      return '<div class="gd-act">'
+        + '<div class="gd-act-icon">' + actIcon(typeKey) + '</div>'
+        + '<div class="gd-act-body"><div class="gd-act-name">' + name + '</div><div class="gd-act-meta">' + meta + '</div></div>'
+        + '<div><div class="gd-act-load">' + load + '</div><div class="gd-act-load-sub">load</div></div>'
+        + '</div>';
+    }).join('');
+  }
+
+  /* ---------- Boot ---------- */
+  async function loadData() {
+    showErr('');
+    try {
+      const r = await fetch('/api/garmin');
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || ('garmin ' + r.status));
+
+      const readiness = pickReadiness(data.readiness);
+      const battery = pickBodyBattery(data.bodyBattery);
+      const hrv = pickHrv(data.hrv);
+      const status = pickTrainingStatus(data.trainingStatus);
+      const sleep = pickSleep(data.sleep);
+      const rhr = pickRestingHR(data.sleep);
+
+      updateRing(readiness.score);
+      updatePill(readiness);
+      $('scoreHeadline').textContent = buildHeadline(readiness);
+      renderTags(buildTags(readiness, hrv, status, battery));
+
+      $('nSleep').innerHTML = (sleep.score != null ? sleep.score : '—') + '<span class="mstat-unit">%</span>';
+      setBar('nSleepBar', sleep.score != null ? sleep.score : 0);
+
+      $('nHrv').innerHTML = (hrv.lastNight != null ? hrv.lastNight : '—') + '<span class="mstat-unit">ms</span>';
+      $('nRhr').innerHTML = (rhr != null ? rhr : '—') + '<span class="mstat-unit">bpm</span>';
+      $('nLoad').textContent = status.load != null ? status.load : '—';
+
+      $('nSleepDur').textContent = sleep.seconds != null ? fmtHM(sleep.seconds) : '—';
+      setBar('nSleepDurBar', sleep.seconds != null ? (sleep.seconds / (9 * 3600)) * 100 : 0);
+
+      $('nBattery').innerHTML = (battery != null ? battery : '—') + '<span class="mstat-unit">%</span>';
+      setBar('nBatteryBar', battery != null ? battery : 0);
+
+      $('nStatus').textContent = status.label || '—';
+
+      const sleepNeedHours = pickSleepNeedHours(data.sleep);
+      const nextWake = nextWakeHourForTonight();
+      if (sleepNeedHours != null && nextWake != null) {
+        $('nBedtime').textContent = fmtClock(nextWake - sleepNeedHours);
+      } else {
+        $('nBedtime').textContent = '—';
+      }
+
+      renderHistory(data.history);
+      renderActivities(data.activities);
+
+      $('gdUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    } catch (e) {
+      showErr(e.message || String(e));
+    }
+  }
+
+  $('gdRefresh').addEventListener('click', async (e) => {
+    const btn = e.currentTarget; btn.classList.add('spin');
+    try { await loadData(); } finally { setTimeout(() => btn.classList.remove('spin'), 600); }
+  });
+
+  loadData();
+})();
+</script>
 
 </body>
 </html>
