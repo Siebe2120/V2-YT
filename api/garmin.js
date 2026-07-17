@@ -49,6 +49,16 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// The library's generic get() expects a FULL url — its own built-in
+// methods (getSleepData etc.) internally prefix every path with this same
+// host. A bare path like "/metrics-service/..." silently fails.
+const GC_API = 'https://connectapi.garmin.com';
+
+async function safeGet(promise) {
+  try { return { data: await promise, error: null }; }
+  catch (e) { return { data: null, error: String(e && e.message ? e.message : e) }; }
+}
+
 export default async function handler(req, res) {
   try {
     const client = await getClient();
@@ -57,17 +67,33 @@ export default async function handler(req, res) {
     // Fetched raw and parsed client-side — these are reverse-engineered,
     // undocumented endpoints, so exact field names in each payload aren't
     // 100% guaranteed. Returning the raw shape keeps a mismatch from
-    // silently breaking the whole card instead of just one stat.
+    // silently breaking the whole card instead of just one stat. Each
+    // call's error (if any) rides along in _errors for debugging via
+    // /api/garmin directly, instead of collapsing to a silent null.
     const [readiness, bodyBattery, trainingStatus, hrv, sleep] = await Promise.all([
-      client.get(`/metrics-service/metrics/trainingreadiness/${date}`).catch(() => null),
-      client.get(`/wellness-service/wellness/bodyBattery/reports/daily?startDate=${date}&endDate=${date}`).catch(() => null),
-      client.get(`/metrics-service/metrics/trainingstatus/aggregated/${date}`).catch(() => null),
-      client.get(`/hrv-service/hrv/${date}`).catch(() => null),
-      client.getSleepData(date).catch(() => null),
+      safeGet(client.get(`${GC_API}/metrics-service/metrics/trainingreadiness/${date}`)),
+      safeGet(client.get(`${GC_API}/wellness-service/wellness/bodyBattery/reports/daily?startDate=${date}&endDate=${date}`)),
+      safeGet(client.get(`${GC_API}/metrics-service/metrics/trainingstatus/aggregated/${date}`)),
+      safeGet(client.get(`${GC_API}/hrv-service/hrv/${date}`)),
+      safeGet(client.getSleepData(new Date())), // wants a Date object, not a string
     ]);
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
-    return res.status(200).json({ date, readiness, bodyBattery, trainingStatus, hrv, sleep });
+    return res.status(200).json({
+      date,
+      readiness: readiness.data,
+      bodyBattery: bodyBattery.data,
+      trainingStatus: trainingStatus.data,
+      hrv: hrv.data,
+      sleep: sleep.data,
+      _errors: {
+        readiness: readiness.error,
+        bodyBattery: bodyBattery.error,
+        trainingStatus: trainingStatus.error,
+        hrv: hrv.error,
+        sleep: sleep.error,
+      },
+    });
   } catch (e) {
     // Session may have gone stale — force a fresh login attempt next time.
     cachedClient = null;
