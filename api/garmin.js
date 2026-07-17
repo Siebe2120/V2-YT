@@ -10,7 +10,12 @@
 // Env vars required on Vercel:
 //   GARMIN_EMAIL
 //   GARMIN_PASSWORD
-import { GarminConnect } from '@gooin/garmin-connect';
+// Default import + destructure — this package is CommonJS with no
+// "exports" map, and this pattern is the reliable way to pull a named
+// export from a CJS module in an ESM context (avoids relying on Node's
+// static-analysis interop for named imports working correctly).
+import garminConnectPkg from '@gooin/garmin-connect';
+const { GarminConnect } = garminConnectPkg;
 
 // Reuse a logged-in client across warm serverless invocations so we're
 // not hitting Garmin's login endpoint on every page load/refresh.
