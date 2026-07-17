@@ -10,12 +10,19 @@
 // Env vars required on Vercel:
 //   GARMIN_EMAIL
 //   GARMIN_PASSWORD
-// Default import + destructure — this package is CommonJS with no
-// "exports" map, and this pattern is the reliable way to pull a named
-// export from a CJS module in an ESM context (avoids relying on Node's
-// static-analysis interop for named imports working correctly).
-import garminConnectPkg from '@gooin/garmin-connect';
-const { GarminConnect } = garminConnectPkg;
+// Loaded lazily inside the handler (not a top-level import) so that if the
+// package fails to load — e.g. a bundling issue — it surfaces as a normal
+// JSON error response instead of crashing the function before our own
+// try/catch ever runs (which shows up to the browser as Vercel's generic
+// "A server error has occurred" HTML page instead of useful JSON).
+let GarminConnect = null;
+async function loadLib() {
+  if (GarminConnect) return GarminConnect;
+  const mod = await import('@gooin/garmin-connect');
+  GarminConnect = (mod.default || mod).GarminConnect;
+  if (!GarminConnect) throw new Error('garmin-connect module loaded but GarminConnect export not found');
+  return GarminConnect;
+}
 
 // Reuse a logged-in client across warm serverless invocations so we're
 // not hitting Garmin's login endpoint on every page load/refresh.
@@ -30,7 +37,8 @@ async function getClient() {
 
   if (cachedClient && Date.now() - cachedAt < SESSION_TTL_MS) return cachedClient;
 
-  const client = new GarminConnect({ username: email, password });
+  const Client = await loadLib();
+  const client = new Client({ username: email, password });
   await client.login();
   cachedClient = client;
   cachedAt = Date.now();
