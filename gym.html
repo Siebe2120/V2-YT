@@ -1264,6 +1264,28 @@ img, video, canvas, svg { max-width: 100%; }
 }
 
 .hidden { display: none !important; }
+
+/* ============================================================
+   HEVY WORKOUTS — read-only feed pulled from the Hevy API.
+   ============================================================ */
+.hv-head { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 14px; }
+.hv-updated { font-size: 11px; color: var(--text-3); font-family: var(--font-mono); margin-right: auto; }
+.hv-refresh-btn { transition: transform 0.4s, background 0.18s, color 0.18s; }
+.hv-refresh-btn.spin { transform: rotate(360deg); }
+.hv-err {
+  background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.28);
+  color: #ff8a8a; padding: 10px 12px; border-radius: 10px;
+  font-size: 11.5px; font-family: var(--font-mono); margin-bottom: 14px;
+}
+.hv-list { display: flex; flex-direction: column; gap: 8px; }
+.hv-workout {
+  background: rgba(255,255,255,0.025); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px;
+}
+.hv-workout-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.hv-workout-title { font-size: 14px; font-weight: 700; color: var(--text-1); }
+.hv-workout-date { font-size: 11px; color: var(--text-3); font-family: var(--font-mono); white-space: nowrap; }
+.hv-workout-meta { font-size: 12px; color: var(--text-2); margin-top: 4px; font-variant-numeric: tabular-nums; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1432,6 +1454,22 @@ img, video, canvas, svg { max-width: 100%; }
       </div>
     </div>
 
+  </div>
+
+  <!-- HEVY WORKOUTS -->
+  <div class="hv-section">
+    <div class="wt-divider"><span>HEVY</span></div>
+    <div class="card">
+      <div class="hv-head">
+        <span class="hv-updated" id="hvUpdated">—</span>
+        <button class="po-icon-btn hv-refresh-btn" id="hvRefresh" type="button" title="Refresh" aria-label="Refresh">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 10"/></svg>
+        </button>
+      </div>
+      <div id="hvErr" class="hv-err" style="display:none"></div>
+      <div id="hvList" class="hv-list"></div>
+      <div id="hvEmpty" class="po-empty" style="display:none">No Hevy workouts yet — log one in the Hevy app and it'll show up here.</div>
+    </div>
   </div>
 
   <div class="po-header">
@@ -3691,6 +3729,73 @@ img, video, canvas, svg { max-width: 100%; }
   $('nvSend').addEventListener('click', ()=>{ const t=input.value; input.value=''; ask(t); });
   input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ const t=input.value; input.value=''; ask(t); } });
   document.querySelectorAll('.nv-chip').forEach(c=> c.addEventListener('click', ()=> ask(c.getAttribute('data-q'))));
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function fmtDate(d) {
+    try { return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+    catch (e) { return ''; }
+  }
+  function fmtDur(startIso, endIso) {
+    const s = new Date(startIso).getTime(), e = new Date(endIso).getTime();
+    if (!s || !e || e <= s) return '';
+    const mins = Math.round((e - s) / 60000);
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return (h > 0 ? h + 'h ' : '') + m + 'm';
+  }
+  function workoutSummary(w) {
+    let vol = 0, sets = 0;
+    (w.exercises || []).forEach(ex => (ex.sets || []).forEach(s => {
+      sets++;
+      if (s.weight_kg != null && s.reps != null) vol += s.weight_kg * s.reps;
+    }));
+    return { vol: Math.round(vol), sets, exercises: (w.exercises || []).length };
+  }
+
+  async function loadHevy() {
+    $('hvErr').style.display = 'none';
+    try {
+      const r = await fetch('/api/hevy');
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || ('hevy ' + r.status));
+
+      const list = (data.workouts || []).slice().sort((a, b) => (a.start_time < b.start_time ? 1 : -1));
+      $('hvEmpty').style.display = list.length ? 'none' : 'block';
+      $('hvList').innerHTML = list.map(w => {
+        const { vol, sets, exercises } = workoutSummary(w);
+        const dur = fmtDur(w.start_time, w.end_time);
+        const meta = [exercises + ' exercises', sets + ' sets', vol ? vol + ' kg volume' : null, dur || null]
+          .filter(Boolean).join(' · ');
+        return `<div class="hv-workout">
+          <div class="hv-workout-head">
+            <span class="hv-workout-title">${escapeHtml(w.title || 'Workout')}</span>
+            <span class="hv-workout-date">${fmtDate(w.start_time)}</span>
+          </div>
+          <div class="hv-workout-meta">${meta}</div>
+        </div>`;
+      }).join('');
+
+      $('hvUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    } catch (e) {
+      $('hvErr').textContent = e.message || String(e);
+      $('hvErr').style.display = 'block';
+    }
+  }
+
+  $('hvRefresh').addEventListener('click', async (e) => {
+    const btn = e.currentTarget; btn.classList.add('spin');
+    try { await loadHevy(); } finally { setTimeout(() => btn.classList.remove('spin'), 600); }
+  });
+
+  loadHevy();
 })();
 </script>
 

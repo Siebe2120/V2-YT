@@ -128,7 +128,25 @@ read-only, refreshed automatically every few minutes.
 
 ---
 
-## 5. Nova (AI mentor / gym coach) — optional
+## 5. Hevy (optional)
+
+Shows your last 10 Hevy workouts (title, date, exercises, sets, volume, duration) as a
+read-only feed on the **Fitness** page, refreshed every time you open the page or hit the
+refresh button.
+
+1. Requires a **Hevy Pro** subscription.
+2. Get your API key at **hevy.com/settings?developer**.
+3. In Vercel → **Settings → Environment Variables**, add:
+
+| Variable | Value |
+|---|---|
+| `HEVY_API_KEY` | your Hevy developer API key |
+
+4. Redeploy. The key stays server-side — the browser only ever talks to `/api/hevy`.
+
+---
+
+## 6. Nova (AI mentor / gym coach) — optional
 
 No setup or key in the repo. Each user **pastes their own Anthropic API key** on the
 **Nova** tile; it's stored only in their browser and sent straight to Anthropic. Get a key at
