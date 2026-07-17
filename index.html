@@ -114,19 +114,20 @@ body::after {
 .hub-clock-label { font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-tertiary); }
 @media (max-width: 480px) { .hub-clock { display: none; } }
 
-/* ===== BENTO GRID — HUD panels ===== */
-.bento {
+/* ===== Live metric panels ===== */
+.panel-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 168px;
-  grid-auto-flow: dense;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
+  margin-bottom: 14px;
 }
-.tile {
-  --accent: #3CE9FF;                 /* each tile overrides this within the cyan family */
+@media (max-width: 900px) { .panel-grid { grid-template-columns: 1fr; } }
+
+.panel {
+  --accent: #3CE9FF;
   position: relative; overflow: hidden;
-  display: flex; flex-direction: column;
-  padding: 20px;
+  display: block;
+  padding: 18px;
   border-radius: 10px;
   text-decoration: none;
   background: linear-gradient(160deg, rgba(13,26,34,0.82) 0%, rgba(4,9,13,0.92) 100%);
@@ -136,15 +137,13 @@ body::after {
   box-shadow: 0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(60,233,255,0.06);
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
-/* Faint accent glow in the corner. */
-.tile::before {
+.panel::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(circle at 78% 18%,
               color-mix(in srgb, var(--accent) 20%, transparent), transparent 55%);
   opacity: 0.6; transition: opacity 0.18s ease;
 }
-/* HUD corner brackets — four L-shaped marks in the tile's accent color. */
-.tile::after {
+.panel::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   --bl: 13px; --bw: 2px;
   background:
@@ -159,58 +158,45 @@ body::after {
   opacity: 0.6;
   transition: opacity 0.18s ease;
 }
-.tile:hover {
+.panel:hover {
   transform: translateY(-3px);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 26px -8px var(--accent);
 }
-.tile:hover::before { opacity: 1; }
-.tile:hover::after  { opacity: 1; }
+.panel:hover::before, .panel:hover::after { opacity: 1; }
 
-/* Tile sizes */
-.tile.big  { grid-column: span 2; grid-row: span 2; }
-.tile.wide { grid-column: span 2; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.panel-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-primary); }
+.panel-icon { font-size: 16px; filter: grayscale(1) brightness(1.8) drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 70%, transparent)); }
+.panel-arrow { color: var(--accent); font-size: 14px; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 65%, transparent)); transition: transform 0.18s ease; flex-shrink: 0; }
+.panel:hover .panel-arrow { transform: translateX(4px); }
 
-/* Tile contents */
-.tile-top { display: flex; align-items: flex-start; justify-content: space-between; }
-.tile-num {
-  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
-  letter-spacing: 0.1em; color: color-mix(in srgb, var(--accent) 55%, var(--text-tertiary));
-}
-.tile-emoji {
-  font-size: 24px; line-height: 1;
-  filter: grayscale(1) brightness(1.8) drop-shadow(0 0 9px color-mix(in srgb, var(--accent) 70%, transparent));
-}
-.tile-spacer { flex: 1; }
-.tile-title {
-  font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
-  color: var(--text-primary); margin: 0 0 4px;
-}
-.tile.big .tile-title { font-size: 28px; }
-.tile-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.tile-sub {
-  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--text-tertiary);
-}
-.tile-arrow {
-  font-size: 18px; color: var(--accent);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 65%, transparent));
-  transition: transform 0.18s ease; flex-shrink: 0;
-}
-.tile:hover .tile-arrow { transform: translateX(4px); }
+.panel-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.panel-stat { background: rgba(255,255,255,0.03); border: 1px solid rgba(60,233,255,0.08); border-radius: 8px; padding: 9px 10px; }
+.panel-stat-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; }
+.panel-stat-val { font-size: 16px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1; }
 
-/* ===== Responsive: collapse the bento on small screens ===== */
-@media (max-width: 720px) {
-  .bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 150px; }
-  .tile.big { grid-column: span 2; grid-row: span 1; }
-  .tile.big .tile-title { font-size: 22px; }
+.panel-note { margin-top: 12px; font-size: 11.5px; color: var(--text-secondary); line-height: 1.4; padding-top: 10px; border-top: 1px solid rgba(60,233,255,0.08); }
+
+/* ===== Secondary mini tiles (pages without their own home panel) ===== */
+.mini-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (max-width: 480px) { .mini-row { grid-template-columns: 1fr; } }
+.mini-tile {
+  --accent: #38BDF8;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  text-decoration: none;
+  background: linear-gradient(160deg, rgba(13,26,34,0.82) 0%, rgba(4,9,13,0.92) 100%);
+  border: 1px solid rgba(60,233,255,0.14);
+  transition: transform 0.18s ease, border-color 0.18s ease;
 }
-@media (max-width: 440px) {
-  body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
-  .bento { grid-template-columns: 1fr; grid-auto-rows: 132px; }
-  .tile.big, .tile.wide { grid-column: span 1; }
-}
+.mini-tile:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.mini-tile-icon { font-size: 22px; flex-shrink: 0; filter: grayscale(1) brightness(1.8) drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 70%, transparent)); }
+.mini-tile-body { flex: 1; min-width: 0; }
+.mini-tile-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.mini-tile-sub { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+.mini-tile-arrow { color: var(--accent); font-size: 14px; flex-shrink: 0; }
 
 /* ===== Header row + gear ===== */
 .hub-head {
@@ -324,120 +310,65 @@ body::after {
     </div>
   </div>
 
-  <div class="bento">
+  <div class="panel-grid">
 
-    <!-- Big tile -->
-    <a class="tile big" href="main.html" style="--accent:#3CE9FF">
-      <div class="tile-top">
-        <span class="tile-num">·01</span>
-        <span class="tile-emoji">🏠</span>
+    <a class="panel" href="health.html" style="--accent:#3CE9FF">
+      <div class="panel-head">
+        <span class="panel-title"><span class="panel-icon">🩺</span>Vitals</span>
+        <span class="panel-arrow">→</span>
       </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Main</h2>
-      <div class="tile-foot">
-        <span class="tile-sub">Goals & daily plan</span>
-        <span class="tile-arrow">→</span>
+      <div class="panel-stats">
+        <div class="panel-stat"><div class="panel-stat-label">Readiness</div><div class="panel-stat-val" id="pReadiness">—</div></div>
+        <div class="panel-stat"><div class="panel-stat-label">Body Battery</div><div class="panel-stat-val" id="pBattery">—</div></div>
+        <div class="panel-stat"><div class="panel-stat-label">HRV Status</div><div class="panel-stat-val" id="pHrv">—</div></div>
+        <div class="panel-stat"><div class="panel-stat-label">Status</div><div class="panel-stat-val" id="pStatus">—</div></div>
       </div>
+      <div class="panel-note" id="pVerdict">Loading Garmin data…</div>
     </a>
 
-    <!-- Wide tile -->
-    <a class="tile wide" href="gym.html" style="--accent:#38BDF8">
-      <div class="tile-top">
-        <span class="tile-num">·02</span>
-        <span class="tile-emoji">💪</span>
+    <a class="panel" href="schedule.html" style="--accent:#4CC9F0">
+      <div class="panel-head">
+        <span class="panel-title"><span class="panel-icon">✅</span>Today</span>
+        <span class="panel-arrow">→</span>
       </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Fitness</h2>
-      <div class="tile-foot">
-        <span class="tile-sub">Workouts, splits, sessions</span>
-        <span class="tile-arrow">→</span>
+      <div class="panel-stats">
+        <div class="panel-stat"><div class="panel-stat-label">Goals</div><div class="panel-stat-val" id="pGoals">0/0</div></div>
+        <div class="panel-stat"><div class="panel-stat-label">Day</div><div class="panel-stat-val" id="pDayPct">—</div></div>
       </div>
+      <div class="panel-note" id="pNextEvent">Loading schedule…</div>
     </a>
 
-    <!-- Small tile -->
-    <a class="tile" href="health.html" style="--accent:#5EEAD4">
-      <div class="tile-top">
-        <span class="tile-num">·03</span>
-        <span class="tile-emoji">💊</span>
+    <a class="panel" href="nutrition.html" style="--accent:#22D3EE">
+      <div class="panel-head">
+        <span class="panel-title"><span class="panel-icon">🥤</span>Nutrition</span>
+        <span class="panel-arrow">→</span>
       </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Health</h2>
-      <div class="tile-foot">
-        <span class="tile-sub">Supplements & vitals</span>
-        <span class="tile-arrow">→</span>
+      <div class="panel-stats">
+        <div class="panel-stat"><div class="panel-stat-label">Water</div><div class="panel-stat-val" id="pWater">0/0</div></div>
+        <div class="panel-stat"><div class="panel-stat-label">Caffeine</div><div class="panel-stat-val" id="pCaf">0 mg</div></div>
       </div>
+      <div class="panel-note" id="pCafNote">Today's intake</div>
     </a>
 
-    <!-- Small tile -->
-    <a class="tile" href="po-water.html" style="--accent:#22D3EE">
-      <div class="tile-top">
-        <span class="tile-num">·04</span>
-        <span class="tile-emoji">💧</span>
-      </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Water</h2>
-      <div class="tile-foot">
-        <span class="tile-sub">Hydration</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
+  </div>
 
-    <!-- Wide tile -->
-    <a class="tile wide" href="finance.html" style="--accent:#67E8F9">
-      <div class="tile-top">
-        <span class="tile-num">·05</span>
-        <span class="tile-emoji">📊</span>
+  <div class="mini-row">
+    <a class="mini-tile" href="gym.html" style="--accent:#38BDF8">
+      <span class="mini-tile-icon">💪</span>
+      <div class="mini-tile-body">
+        <div class="mini-tile-title">Fitness</div>
+        <div class="mini-tile-sub">Hevy · weight · photos</div>
       </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Finance</h2>
-      <div class="tile-foot">
-        <span class="tile-sub">Net worth & spending</span>
-        <span class="tile-arrow">→</span>
-      </div>
+      <span class="mini-tile-arrow">→</span>
     </a>
-
-    <!-- Small tile -->
-    <a class="tile" href="caffeine.html" style="--accent:#7DD3FC">
-      <div class="tile-top">
-        <span class="tile-num">·06</span>
-        <span class="tile-emoji">☕</span>
+    <a class="mini-tile" href="nova-lite.html" style="--accent:#2DD4BF">
+      <span class="mini-tile-icon">🧠</span>
+      <div class="mini-tile-body">
+        <div class="mini-tile-title">Nova</div>
+        <div class="mini-tile-sub">Your AI mentor</div>
       </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Caffeine</h2>
-      <div class="tile-foot">
-        <span class="tile-sub">Intake & timing</span>
-        <span class="tile-arrow">→</span>
-      </div>
+      <span class="mini-tile-arrow">→</span>
     </a>
-
-    <!-- Wide tile -->
-    <a class="tile wide" href="nova-lite.html" style="--accent:#2DD4BF">
-      <div class="tile-top">
-        <span class="tile-num">·07</span>
-        <span class="tile-emoji">🧠</span>
-      </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Nova</h2>
-      <div class="tile-foot">
-        <span class="tile-sub">Your AI mentor</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
-
-    <!-- Small tile -->
-    <a class="tile" href="schedule.html" style="--accent:#4CC9F0">
-      <div class="tile-top">
-        <span class="tile-num">·08</span>
-        <span class="tile-emoji">📅</span>
-      </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Schedule</h2>
-      <div class="tile-foot">
-        <span class="tile-sub">Weekly plan & today</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
-
   </div>
 </div>
 
@@ -695,6 +626,155 @@ body::after {
   }
   tickClock();
   setInterval(tickClock, 1000);
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function loadJSON(k, f) { try { return JSON.parse(localStorage.getItem(k)) || f; } catch (e) { return f; } }
+
+  /* ---------- Vitals panel (Garmin) ---------- */
+  const STATUS_LABELS = {
+    1: 'Declining', 2: 'Resting', 3: 'Maintaining',
+    4: 'Progressing', 5: 'Peaking', 6: 'Overreaching', 7: 'Unproductive'
+  };
+  async function loadVitalsPanel() {
+    try {
+      const r = await fetch('/api/garmin');
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || ('garmin ' + r.status));
+
+      const readiness = Array.isArray(data.readiness) ? data.readiness[0] : data.readiness;
+      const score = readiness && readiness.score != null ? readiness.score : null;
+      const level = (readiness && (readiness.level || readiness.feedbackShort)) || null;
+      $('pReadiness').textContent = score != null ? score : '—';
+
+      const bbDay = Array.isArray(data.bodyBattery) ? data.bodyBattery[data.bodyBattery.length - 1] : data.bodyBattery;
+      const bbArr = bbDay && (bbDay.bodyBatteryValuesArray || bbDay.bodyBatteryValueArray);
+      let battery = null;
+      if (Array.isArray(bbArr) && bbArr.length) {
+        const last = bbArr[bbArr.length - 1];
+        battery = Array.isArray(last) ? last[1] : (last && last.level);
+      }
+      $('pBattery').textContent = battery != null ? battery : '—';
+
+      const hrv = data.hrv && (data.hrv.hrvSummary || data.hrv);
+      $('pHrv').textContent = (hrv && (hrv.status || hrv.hrvStatus)) || '—';
+
+      const byDevice = data.trainingStatus && data.trainingStatus.mostRecentTrainingStatus && data.trainingStatus.mostRecentTrainingStatus.latestTrainingStatusData;
+      const firstDev = byDevice && Object.values(byDevice)[0];
+      $('pStatus').textContent = (firstDev && STATUS_LABELS[firstDev.trainingStatus]) || '—';
+
+      let verdict = 'No readiness data yet.';
+      if (score != null || level) {
+        const lvl = (level || '').toUpperCase();
+        if (lvl.indexOf('LOW') !== -1 || (score != null && score < 40)) verdict = 'Low readiness — recovery day.';
+        else if (lvl.indexOf('HIGH') !== -1 || (score != null && score >= 70)) verdict = 'High readiness — good day to push.';
+        else verdict = 'Moderate readiness — train as planned.';
+      }
+      $('pVerdict').textContent = verdict;
+    } catch (e) {
+      $('pVerdict').textContent = 'Garmin not connected yet.';
+    }
+  }
+
+  /* ---------- Today panel (goals + schedule, all local) ---------- */
+  function formatTimeLabel(hhmm) {
+    const [hStr, mStr] = (hhmm || '00:00').split(':');
+    let h = parseInt(hStr, 10) || 0;
+    const m = parseInt(mStr, 10) || 0;
+    const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12; if (h === 0) h = 12;
+    return h + ':' + pad2(m) + ' ' + ap;
+  }
+  function loadTodayPanel() {
+    function dateToKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+    function activeDateStr() {
+      const now = new Date();
+      if (now.getHours() < 6) { const d = new Date(now); d.setDate(d.getDate() - 1); return dateToKey(d); }
+      return dateToKey(now);
+    }
+    const goals = loadJSON('goals:' + activeDateStr(), []);
+    const total = goals.length, done = goals.filter(g => g.done).length;
+    $('pGoals').textContent = done + '/' + total;
+
+    const now = new Date();
+    const hours = now.getHours() + now.getMinutes() / 60;
+    const WAKE = 8, SLEEP = 24;
+    let pct = '—';
+    if (hours < WAKE) pct = 'Asleep';
+    else if (hours >= SLEEP) pct = '100%';
+    else pct = Math.floor((hours - WAKE) / (SLEEP - WAKE) * 100) + '%';
+    $('pDayPct').textContent = pct;
+
+    const week = loadJSON('schedule:week', {});
+    const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const today = DAYS[(now.getDay() + 6) % 7];
+    const events = (week[today] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    const nowHM = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    const next = events.find(e => (e.time || '') >= nowHM);
+    $('pNextEvent').textContent = next
+      ? ('Next: ' + next.text + ' at ' + formatTimeLabel(next.time))
+      : (events.length ? 'No more events today' : 'Nothing scheduled today');
+  }
+
+  /* ---------- Nutrition panel (water + caffeine, all local) ---------- */
+  function loadNutritionPanel() {
+    const state = loadJSON('po_water_v1', null);
+    if (state) {
+      const d = new Date();
+      const k = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+      const doneCount = (state.logs || {})[k] || 0;
+      const p = state.profile || { weightKg: 75 };
+      const wKg = state.weightUnit === 'lb' ? (p.weightKg || 0) / 2.20462 : (p.weightKg || 0);
+      const base = wKg * 35;
+      const exercise = (p.activityHrsPerWeek || 0) / 7 * 500;
+      const caffeineAdj = Math.max(0, (state.caffeineMgPerDay || 0) - 200) * 1.5;
+      const subs = (state.substances || []).reduce((s, x) => {
+        const dose = (x && x.dose != null ? x.dose : (x && x.defaultDose)) || 0;
+        return s + Math.max(0, dose * ((x && x.mlPerUnit) || 0));
+      }, 0);
+      let adjust = 0;
+      if (p.sex === 'm') adjust += 200;
+      if ((p.age || 0) >= 50) adjust += 100;
+      const totalMl = base + exercise + caffeineAdj + subs + adjust;
+      let unitVol;
+      if (state.unit === 'glass') unitVol = state.glassMl || 250;
+      else if (state.unit === 'oz') unitVol = 30;
+      else if (state.unit === 'ml') unitVol = 1;
+      else unitVol = state.bottleMl || 500;
+      const total = Math.max(1, Math.ceil(totalMl / unitVol));
+      $('pWater').textContent = doneCount + '/' + total;
+    } else {
+      $('pWater').textContent = '0/0';
+    }
+
+    const logs = loadJSON('caf:logs', []);
+    const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+    const todaysLogs = logs.filter(l => l.ts >= midnight.getTime());
+    const total = Math.round(todaysLogs.reduce((a, l) => a + l.mg, 0));
+    const HALF_LIFE_H = 5;
+    const activeNow = Math.round(logs.reduce((s, l) => {
+      const hrs = (Date.now() - l.ts) / 3600000;
+      return s + (hrs < 0 ? 0 : l.mg * Math.pow(0.5, hrs / HALF_LIFE_H));
+    }, 0));
+    $('pCaf').textContent = total + ' mg';
+    $('pCafNote').textContent = activeNow > 0 ? (activeNow + ' mg active now') : "Today's intake";
+  }
+
+  function loadAllPanels() {
+    loadVitalsPanel();
+    loadTodayPanel();
+    loadNutritionPanel();
+  }
+
+  loadAllPanels();
+  setInterval(loadTodayPanel, 60 * 1000);
+  setInterval(loadNutritionPanel, 60 * 1000);
+  window.addEventListener('focus', loadAllPanels);
+  window.addEventListener('storage', () => { loadTodayPanel(); loadNutritionPanel(); });
 })();
 </script>
 </body>
