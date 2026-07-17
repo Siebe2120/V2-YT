@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/garmin.js": {
+      "includeFiles": "node_modules/@gooin/garmin-connect/**"
+    }
+  }
+}
