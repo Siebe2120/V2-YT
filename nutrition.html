@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
-<title>Caffeine · Dashboard</title>
+<title>Nutrition · Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="sync.js" defer></script>
@@ -66,6 +66,18 @@ body::after {
 }
 .section-title::before { content: ''; width: 18px; height: 1px; background: var(--text-tertiary); opacity: 0.6; }
 .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent); }
+
+.water-iframe {
+  display: block;
+  width: 100%;
+  height: 880px;
+  border: 0;
+  background: transparent;
+  border-radius: 16px;
+  overflow: hidden;
+  color-scheme: dark;
+}
+@media (max-width: 480px) { .water-iframe { height: 780px; } }
 
 .gm-card {
   position: relative; background: rgba(255,255,255,0.04); border-radius: 16px; padding: 20px;
@@ -185,7 +197,13 @@ body::after {
 <body>
 <div class="page">
 
-  <h1 class="dash-title">Caffeine</h1>
+  <h1 class="dash-title">Nutrition</h1>
+
+  <!-- WATER -->
+  <div class="section">
+    <div class="section-title">Water</div>
+    <iframe src="po-water.html" class="water-iframe" loading="lazy" title="Water Tracker"></iframe>
+  </div>
 
   <!-- ENERGY CURVE -->
   <div class="section">
@@ -334,7 +352,7 @@ body::after {
 
   /* ============ Personal data ============ */
   let bodyKg = null, recovery = null;
-  let wakeHour = 7, bedHour = 23;   // defaults; overridden by WHOOP
+  let wakeHour = 7, bedHour = 23;   // defaults; overridden by WHOOP/Garmin
   function readProfile() {
     const w = loadJSON('po_water_v1', null);
     if (w && w.profile && w.profile.weightKg) {
@@ -561,7 +579,7 @@ body::after {
     if(atBed>=50) tips.push(['⚠️','~'+atBed+' mg will still be active at bedtime — that\'s enough to delay deep sleep. Ease off.']);
     if(a.crashSignificant) tips.push(['🚶','Beat the '+fmtClock(a.crashT)+' dip with 10 min of daylight + water instead of another coffee — you\'ll avoid stacking a late crash.']);
     tips.push(['💧','Drink a glass of water per caffeinated drink — dehydration mimics and worsens the crash.']);
-    if(recovery!=null && recovery<34) tips.push(['🔋','WHOOP recovery is '+recovery+'% — low. Caffeine masks fatigue but won\'t repay sleep debt; keep today under '+dailyLimit()+' mg.']);
+    if(recovery!=null && recovery<34) tips.push(['🔋','Recovery is '+recovery+'% — low. Caffeine masks fatigue but won\'t repay sleep debt; keep today under '+dailyLimit()+' mg.']);
     const ul=$('tips'); ul.innerHTML='';
     tips.forEach(([ic,txt])=>{ const li=document.createElement('li'); li.className='tip'; li.innerHTML='<span class="ic">'+ic+'</span><span>'+txt+'</span>'; ul.appendChild(li); });
   }
@@ -583,7 +601,7 @@ body::after {
     const parts=[];
     if(bodyKg) parts.push('Target ~'+target+' mg (3 mg/kg for '+Math.round(bodyKg)+' kg). Ceiling '+limit+' mg.');
     else parts.push('Using the 400 mg/day ceiling — add your weight in Settings for a personalized target.');
-    if(recovery!=null) parts.push('WHOOP recovery '+recovery+'%'+(recovery<34?' — limit pulled back to '+limit+' mg.':'.'));
+    if(recovery!=null) parts.push('Recovery '+recovery+'%'+(recovery<34?' — limit pulled back to '+limit+' mg.':'.'));
     $('dailyNote').innerHTML=parts.join('<br>');
   }
 
@@ -650,6 +668,8 @@ body::after {
   setInterval(()=>{ if(scrubT==null) renderAll(); }, 60000);
 
   /* ============ Cloud sync ============ */
+  // appKey stays 'caffeine' (not renamed to 'nutrition') so existing
+  // synced drink logs keep matching this row instead of starting fresh.
   if(window.initCloudSync){
     window.initCloudSync({ appKey:'caffeine', syncedKeys:[LOGS_KEY,CUSTOM_KEY],
       onApplied:function(){ logs=loadJSON(LOGS_KEY,[]); custom=loadJSON(CUSTOM_KEY,[]); renderResults($('search').value); renderAll(); } });
