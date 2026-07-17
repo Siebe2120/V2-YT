@@ -145,6 +145,168 @@ main {
 
 <main>
 
+<!-- ===== Garmin card ===== -->
+  <style>
+    .gd-section { margin-bottom: 32px; }
+    .gd-card {
+      padding: 22px 22px 18px;
+      background: rgba(255,255,255,0.025);
+      border-radius: 22px;
+      box-shadow: 0 1px 0 0 rgba(255,255,255,0.06) inset, 0 12px 40px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.25);
+    }
+    .gd-brand { display:inline-flex; align-items:center; gap:8px; }
+    .gd-brand-mark { width:22px; height:22px; border-radius:6px; background:#007CC3; color:#FFF; font-weight:900; font-size:12px; display:inline-flex; align-items:center; justify-content:center; letter-spacing:-0.04em; box-shadow:0 0 12px rgba(0,124,195,0.35); }
+    .gd-brand-text { font-weight:800; font-size:13px; letter-spacing:0.18em; color:var(--text-primary); }
+    .gd-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+    .gd-head-right { display:flex; align-items:center; gap:10px; }
+    .gd-updated { font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono); }
+    .gd-refresh { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform 0.4s, background 0.18s, color 0.18s; }
+    .gd-refresh:hover { background:rgba(255,255,255,0.10); color:var(--text-primary); }
+    .gd-refresh.spin { transform:rotate(360deg); }
+    .gd-err { background:rgba(255,107,107,0.08); border:1px solid rgba(255,107,107,0.28); color:#FF8A8A; padding:10px 12px; border-radius:10px; font-size:11.5px; font-family:var(--font-mono); margin-bottom:14px; }
+    .gd-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    .gd-stat { position:relative; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); border-radius:12px; padding:12px 10px; text-align:center; }
+    .gd-stat-label { font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.14em; font-weight:700; margin-bottom:8px; }
+    .gd-stat-val { font-size:19px; font-weight:700; color:var(--text-primary); line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
+    .gd-stat-sub { font-size:9.5px; color:var(--text-tertiary); margin-top:5px; font-family:var(--font-mono); }
+    @media (max-width:480px) { .gd-stats { grid-template-columns:repeat(2,1fr); } }
+  </style>
+  <div class="gd-section">
+    <div class="section-title">Garmin</div>
+    <div class="gd-card">
+      <div class="gd-head">
+        <div class="gd-brand"><span class="gd-brand-mark">G</span><span class="gd-brand-text">GARMIN CONNECT</span></div>
+        <div class="gd-head-right">
+          <span id="gdUpdated" class="gd-updated">—</span>
+          <button id="gdRefresh" class="gd-refresh" type="button" aria-label="Refresh"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 10"/></svg></button>
+        </div>
+      </div>
+      <div id="gdErr" class="gd-err" style="display:none"></div>
+      <div class="gd-stats">
+        <div class="gd-stat"><div class="gd-stat-label">Readiness</div><div class="gd-stat-val" id="gdReadiness">—</div><div class="gd-stat-sub" id="gdReadinessSub">/ 100</div></div>
+        <div class="gd-stat"><div class="gd-stat-label">Body Battery</div><div class="gd-stat-val" id="gdBattery">—</div><div class="gd-stat-sub">/ 100</div></div>
+        <div class="gd-stat"><div class="gd-stat-label">Sleep</div><div class="gd-stat-val" id="gdSleep">—</div><div class="gd-stat-sub" id="gdSleepSub">duration</div></div>
+        <div class="gd-stat"><div class="gd-stat-label">Recovery</div><div class="gd-stat-val" id="gdRecovery">—</div><div class="gd-stat-sub">hrs left</div></div>
+        <div class="gd-stat"><div class="gd-stat-label">HRV Status</div><div class="gd-stat-val" id="gdHrvStatus">—</div><div class="gd-stat-sub" id="gdHrvSub">—</div></div>
+        <div class="gd-stat"><div class="gd-stat-label">Load</div><div class="gd-stat-val" id="gdLoad">—</div><div class="gd-stat-sub">acute</div></div>
+        <div class="gd-stat"><div class="gd-stat-label">Status</div><div class="gd-stat-val" id="gdStatus">—</div><div class="gd-stat-sub">training</div></div>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function () {
+    const $ = (id) => document.getElementById(id);
+    const errEl = $('gdErr');
+    function showErr(m) { errEl.textContent = m || ''; errEl.style.display = m ? 'block' : 'none'; }
+
+    // Garmin's numeric training-status codes, as commonly documented by
+    // community reverse-engineering of the (unofficial) Connect API.
+    const STATUS_LABELS = {
+      1: 'Declining', 2: 'Resting', 3: 'Maintaining',
+      4: 'Progressing', 5: 'Peaking', 6: 'Overreaching', 7: 'Unproductive'
+    };
+
+    function num(v) { return (v === null || v === undefined || Number.isNaN(v)) ? null : v; }
+
+    // Every pick* function is defensive: these are undocumented endpoints,
+    // so field names are our best guess from public reverse-engineering
+    // write-ups, not a guaranteed contract. Missing fields fall back to
+    // "—" per stat instead of breaking the whole card.
+    function pickReadiness(raw) {
+      const r = Array.isArray(raw) ? raw[0] : raw;
+      if (!r) return {};
+      return {
+        score: num(r.score),
+        level: r.level || r.feedbackShort || null,
+        recoveryTime: num(r.recoveryTime != null ? r.recoveryTime : r.recoveryTimeHours),
+      };
+    }
+    function pickBodyBattery(raw) {
+      const day = Array.isArray(raw) ? raw[raw.length - 1] : raw;
+      const arr = day && (day.bodyBatteryValuesArray || day.bodyBatteryValueArray);
+      if (Array.isArray(arr) && arr.length) {
+        const last = arr[arr.length - 1];
+        const level = Array.isArray(last) ? last[1] : (last && last.level);
+        return num(level);
+      }
+      return null;
+    }
+    function pickHrv(raw) {
+      const s = raw && (raw.hrvSummary || raw);
+      if (!s) return {};
+      return {
+        status: s.status || s.hrvStatus || null,
+        lastNight: num(s.lastNightAvg != null ? s.lastNightAvg : s.weeklyAvg),
+      };
+    }
+    function pickTrainingStatus(raw) {
+      try {
+        const byDevice = raw && raw.mostRecentTrainingStatus && raw.mostRecentTrainingStatus.latestTrainingStatusData;
+        const first = byDevice && Object.values(byDevice)[0];
+        if (!first) return {};
+        const load = first.dailyTrainingLoadAcute != null
+          ? first.dailyTrainingLoadAcute
+          : (first.acuteTrainingLoadDTO && first.acuteTrainingLoadDTO.dailyTrainingLoadAcute);
+        return { label: STATUS_LABELS[first.trainingStatus] || first.trainingStatusFeedbackPhrase || null, load: num(load) };
+      } catch (e) { return {}; }
+    }
+    function pickSleep(raw) {
+      const d = raw && raw.dailySleepDTO;
+      if (!d) return {};
+      const score = d.sleepScores && d.sleepScores.overall && d.sleepScores.overall.value;
+      return { seconds: num(d.sleepTimeSeconds), score: num(score) };
+    }
+    function fmtHM(totalSeconds) {
+      if (totalSeconds == null) return '—';
+      const h = Math.floor(totalSeconds / 3600), m = Math.round((totalSeconds % 3600) / 60);
+      return h + 'h ' + m + 'm';
+    }
+
+    async function loadData() {
+      showErr('');
+      try {
+        const r = await fetch('/api/garmin');
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || ('garmin ' + r.status));
+
+        const readiness = pickReadiness(data.readiness);
+        const battery = pickBodyBattery(data.bodyBattery);
+        const hrv = pickHrv(data.hrv);
+        const status = pickTrainingStatus(data.trainingStatus);
+        const sleep = pickSleep(data.sleep);
+
+        $('gdReadiness').textContent = readiness.score != null ? readiness.score : '—';
+        $('gdReadinessSub').textContent = readiness.level || '/ 100';
+
+        $('gdBattery').textContent = battery != null ? battery : '—';
+
+        $('gdSleep').textContent = sleep.seconds != null ? fmtHM(sleep.seconds) : '—';
+        $('gdSleepSub').textContent = sleep.score != null ? ('score ' + sleep.score) : 'duration';
+
+        $('gdRecovery').textContent = readiness.recoveryTime != null ? readiness.recoveryTime : '—';
+
+        $('gdHrvStatus').textContent = hrv.status || '—';
+        $('gdHrvSub').textContent = hrv.lastNight != null ? (hrv.lastNight + ' ms') : '—';
+
+        $('gdLoad').textContent = status.load != null ? status.load : '—';
+
+        $('gdStatus').textContent = status.label || '—';
+
+        $('gdUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      } catch (e) {
+        showErr(e.message || String(e));
+      }
+    }
+
+    $('gdRefresh').addEventListener('click', async (e) => {
+      const btn = e.currentTarget; btn.classList.add('spin');
+      try { await loadData(); } finally { setTimeout(() => btn.classList.remove('spin'), 600); }
+    });
+
+    loadData();
+  })();
+  </script>
+
 <!-- ===== intervals.icu card ===== -->
   <style>
     .iv-section { margin-bottom: 32px; }

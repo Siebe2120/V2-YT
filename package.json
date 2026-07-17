@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "@gooin/garmin-connect": "^1.8.7"
   },
   "engines": {
     "node": ">=18"

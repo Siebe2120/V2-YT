@@ -146,7 +146,39 @@ refresh button.
 
 ---
 
-## 6. Nova (AI mentor / gym coach) — optional
+## 6. Garmin (optional, unofficial)
+
+Shows Training Readiness, Body Battery, Sleep, Recovery Time, HRV Status, Load, and
+Training Status on the **Health** page.
+
+> ⚠️ **Read this before enabling.** Garmin has no self-serve public API for
+> individuals — their official Health API is partner/business-only. This integration
+> uses the same *unofficial*, reverse-engineered Garmin Connect API that community
+> tools like Home Assistant's Garmin integration use. That means:
+> - It logs in with your **real Garmin Connect email + password** (not a revocable
+>   scoped token like the WHOOP/Outlook integrations above).
+> - It's unofficial — Garmin could change something and break it without notice.
+> - It's a gray area against Garmin's ToS, though very widely done by hobbyists.
+> - Field names for a couple of stats (Recovery Time, Load) are best-effort parsed
+>   from undocumented endpoints — if one shows "—" that shouldn't, the raw shape may
+>   need a small tweak once we can see what your account actually returns.
+
+1. In Vercel → **Settings → Environment Variables**, add:
+
+| Variable | Value |
+|---|---|
+| `GARMIN_EMAIL` | your Garmin Connect login email |
+| `GARMIN_PASSWORD` | your Garmin Connect password |
+
+2. Redeploy. The Health page's **Garmin** card will start pulling live.
+
+Consider using a Garmin Connect account you're comfortable storing a password for
+outside Garmin's own apps (e.g. not reused elsewhere), given the unofficial nature
+of this integration.
+
+---
+
+## 7. Nova (AI mentor / gym coach) — optional
 
 No setup or key in the repo. Each user **pastes their own Anthropic API key** on the
 **Nova** tile; it's stored only in their browser and sent straight to Anthropic. Get a key at
