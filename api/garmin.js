@@ -70,12 +70,13 @@ export default async function handler(req, res) {
     // silently breaking the whole card instead of just one stat. Each
     // call's error (if any) rides along in _errors for debugging via
     // /api/garmin directly, instead of collapsing to a silent null.
-    const [readiness, bodyBattery, trainingStatus, hrv, sleep] = await Promise.all([
+    const [readiness, bodyBattery, trainingStatus, hrv, sleep, activities] = await Promise.all([
       safeGet(client.get(`${GC_API}/metrics-service/metrics/trainingreadiness/${date}`)),
       safeGet(client.get(`${GC_API}/wellness-service/wellness/bodyBattery/reports/daily?startDate=${date}&endDate=${date}`)),
       safeGet(client.get(`${GC_API}/metrics-service/metrics/trainingstatus/aggregated/${date}`)),
       safeGet(client.get(`${GC_API}/hrv-service/hrv/${date}`)),
       safeGet(client.getSleepData(new Date())), // wants a Date object, not a string
+      safeGet(client.getActivities(0, 10)),
     ]);
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
@@ -86,12 +87,14 @@ export default async function handler(req, res) {
       trainingStatus: trainingStatus.data,
       hrv: hrv.data,
       sleep: sleep.data,
+      activities: activities.data,
       _errors: {
         readiness: readiness.error,
         bodyBattery: bodyBattery.error,
         trainingStatus: trainingStatus.error,
         hrv: hrv.error,
         sleep: sleep.error,
+        activities: activities.error,
       },
     });
   } catch (e) {

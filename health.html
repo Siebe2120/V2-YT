@@ -170,6 +170,23 @@ main {
     .gd-stat-val { font-size:19px; font-weight:700; color:var(--text-primary); line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
     .gd-stat-sub { font-size:9.5px; color:var(--text-tertiary); margin-top:5px; font-family:var(--font-mono); }
     @media (max-width:480px) { .gd-stats { grid-template-columns:repeat(2,1fr); } }
+    .gd-verdict { margin-top:18px; padding:16px 18px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); border-left:2px solid rgba(255,255,255,0.40); border-radius:0 12px 12px 0; }
+    .gd-verdict-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .gd-verdict-eye { font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.18em; font-weight:700; }
+    .gd-verdict-badge { font-size:9.5px; font-weight:800; padding:3px 9px; border-radius:999px; letter-spacing:0.14em; text-transform:uppercase; border:1px solid; }
+    .gd-verdict-badge.green  { color:#6BE3A4; border-color:rgba(107,227,164,0.50); background:rgba(107,227,164,0.10); }
+    .gd-verdict-badge.yellow { color:#F2C063; border-color:rgba(242,192,99,0.50); background:rgba(242,192,99,0.10); }
+    .gd-verdict-badge.red    { color:#FF8A8A; border-color:rgba(255,138,138,0.50); background:rgba(255,138,138,0.10); }
+    .gd-verdict-headline { font-size:15px; font-weight:600; color:var(--text-primary); line-height:1.4; }
+    .gd-acts { margin-top:22px; padding-top:22px; border-top:1px solid rgba(255,255,255,0.05); }
+    .gd-acts-eye { font-size:10px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:12px; }
+    .gd-act { display:grid; grid-template-columns:34px 1fr auto; gap:12px; align-items:center; padding:11px 12px; border-radius:10px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); margin-bottom:6px; }
+    .gd-act-icon { font-size:18px; text-align:center; }
+    .gd-act-body { min-width:0; }
+    .gd-act-name { font-size:13px; font-weight:600; color:var(--text-primary); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .gd-act-meta { font-size:11px; color:var(--text-tertiary); margin-top:2px; font-family:var(--font-mono); }
+    .gd-act-load { font-size:15px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; text-align:right; }
+    .gd-act-load-sub { font-size:9px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.1em; }
   </style>
   <div class="gd-section">
     <div class="section-title">Garmin</div>
@@ -190,6 +207,14 @@ main {
         <div class="gd-stat"><div class="gd-stat-label">HRV Status</div><div class="gd-stat-val" id="gdHrvStatus">—</div><div class="gd-stat-sub" id="gdHrvSub">—</div></div>
         <div class="gd-stat"><div class="gd-stat-label">Load</div><div class="gd-stat-val" id="gdLoad">—</div><div class="gd-stat-sub">acute</div></div>
         <div class="gd-stat"><div class="gd-stat-label">Status</div><div class="gd-stat-val" id="gdStatus">—</div><div class="gd-stat-sub">training</div></div>
+      </div>
+      <div class="gd-verdict" id="gdVerdict" style="display:none">
+        <div class="gd-verdict-head"><span class="gd-verdict-eye">Today's call</span><span id="gdVerdictBadge" class="gd-verdict-badge"></span></div>
+        <div id="gdVerdictHead" class="gd-verdict-headline"></div>
+      </div>
+      <div class="gd-acts" id="gdActs" style="display:none">
+        <div class="gd-acts-eye">Recent activities</div>
+        <div id="gdActList"></div>
       </div>
     </div>
   </div>
@@ -262,6 +287,51 @@ main {
       return h + 'h ' + m + 'm';
     }
 
+    // "Today's call" — same idea as the old intervals.icu TSB verdict, but
+    // driven by Garmin's own Training Readiness score/level instead.
+    function pickVerdict(readiness) {
+      const score = readiness.score;
+      const level = (readiness.level || '').toUpperCase();
+      if (score == null && !level) return null;
+      if (level.indexOf('LOW') !== -1 || (score != null && score < 40)) {
+        return { cls: 'red', badge: 'LOW', headline: 'Low readiness — recovery day. Ease off and prioritize rest.' };
+      }
+      if (level.indexOf('HIGH') !== -1 || (score != null && score >= 70)) {
+        return { cls: 'green', badge: 'HIGH', headline: 'High readiness — good day to push. Go hard on the planned session.' };
+      }
+      return { cls: 'yellow', badge: 'MODERATE', headline: 'Moderate readiness. Train as planned, keep intensity controlled.' };
+    }
+
+    const ACT_ICONS = {
+      running: '🏃', trail_running: '🏃', treadmill_running: '🏃',
+      cycling: '🚴', road_biking: '🚴', mountain_biking: '🚴', indoor_cycling: '🚴',
+      swimming: '🏊', lap_swimming: '🏊', open_water_swimming: '🏊',
+      strength_training: '🏋️', fitness_equipment: '🏋️',
+      walking: '🚶', hiking: '🥾', yoga: '🧘', cardio_training: '❤️',
+    };
+    function actIcon(typeKey) { return ACT_ICONS[typeKey] || '📊'; }
+    function fmtDist(m) { if (!m) return ''; return (m / 1000).toFixed(1) + ' km'; }
+    function fmtDur(s) { if (!s) return ''; const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); return (h > 0 ? h + 'h ' : '') + m + 'm'; }
+    function fmtActDate(d) { try { return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); } catch (e) { return ''; } }
+    function escapeHtml(str) { return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+    function renderActivities(acts) {
+      const list = (Array.isArray(acts) ? acts : []).slice(0, 10);
+      if (!list.length) { $('gdActs').style.display = 'none'; return; }
+      $('gdActs').style.display = '';
+      $('gdActList').innerHTML = list.map(a => {
+        const typeKey = a.activityType && a.activityType.typeKey;
+        const meta = [fmtActDate(a.startTimeLocal), fmtDist(a.distance), fmtDur(a.duration)].filter(Boolean).join(' · ');
+        const load = a.activityTrainingLoad != null ? Math.round(a.activityTrainingLoad) : '—';
+        const name = escapeHtml(a.activityName || typeKey || 'Activity');
+        return '<div class="gd-act">'
+          + '<div class="gd-act-icon">' + actIcon(typeKey) + '</div>'
+          + '<div class="gd-act-body"><div class="gd-act-name">' + name + '</div><div class="gd-act-meta">' + meta + '</div></div>'
+          + '<div><div class="gd-act-load">' + load + '</div><div class="gd-act-load-sub">load</div></div>'
+          + '</div>';
+      }).join('');
+    }
+
     async function loadData() {
       showErr('');
       try {
@@ -292,6 +362,19 @@ main {
 
         $('gdStatus').textContent = status.label || '—';
 
+        const verdict = pickVerdict(readiness);
+        if (verdict) {
+          $('gdVerdict').style.display = '';
+          const badge = $('gdVerdictBadge');
+          badge.textContent = verdict.badge;
+          badge.className = 'gd-verdict-badge ' + verdict.cls;
+          $('gdVerdictHead').textContent = verdict.headline;
+        } else {
+          $('gdVerdict').style.display = 'none';
+        }
+
+        renderActivities(data.activities);
+
         $('gdUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
       } catch (e) {
         showErr(e.message || String(e));
@@ -307,222 +390,6 @@ main {
   })();
   </script>
 
-<!-- ===== intervals.icu card ===== -->
-  <style>
-    .iv-section { margin-bottom: 32px; }
-    .iv-card {
-      padding: 22px 22px 18px;
-      background: rgba(255,255,255,0.025);
-      border-radius: 22px;
-      box-shadow: 0 1px 0 0 rgba(255,255,255,0.06) inset, 0 12px 40px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.25);
-    }
-    .iv-brand { display:inline-flex; align-items:center; gap:8px; }
-    .iv-brand-mark { width:22px; height:22px; border-radius:6px; background:#1D9E75; color:#FFF; font-weight:900; font-size:12px; display:inline-flex; align-items:center; justify-content:center; letter-spacing:-0.04em; box-shadow:0 0 12px rgba(29,158,117,0.35); }
-    .iv-brand-text { font-weight:800; font-size:13px; letter-spacing:0.18em; color:var(--text-primary); }
-    .iv-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
-    .iv-live { display:inline-flex; align-items:center; gap:5px; font-size:9.5px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:#6BE3A4; margin-left:4px; padding:3px 8px; border-radius:999px; background:rgba(107,227,164,0.10); border:1px solid rgba(107,227,164,0.30); }
-    .iv-live-dot { width:6px; height:6px; border-radius:50%; background:#6BE3A4; box-shadow:0 0 8px rgba(107,227,164,0.65); animation:iv-pulse 1.6s ease-in-out infinite; }
-    @keyframes iv-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
-    .iv-head-right { display:flex; align-items:center; gap:10px; }
-    .iv-updated { font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono); }
-    .iv-refresh { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform 0.4s, background 0.18s, color 0.18s; }
-    .iv-refresh:hover { background:rgba(255,255,255,0.10); color:var(--text-primary); }
-    .iv-refresh.spin { transform:rotate(360deg); }
-    .iv-ring-wrap { position:relative; width:240px; max-width:78%; margin:0 auto 24px; aspect-ratio:1; }
-    .iv-ring { width:100%; height:100%; transform:rotate(-90deg); filter:drop-shadow(0 0 24px rgba(255,255,255,0.05)); }
-    .iv-ring-track { fill:none; stroke:rgba(255,255,255,0.06); stroke-width:12; }
-    .iv-ring-fill { fill:none; stroke:#FFF; stroke-width:12; stroke-linecap:round; stroke-dasharray:603.19; stroke-dashoffset:603.19; transition:stroke-dashoffset 0.8s cubic-bezier(0.22,1,0.36,1), stroke 0.4s; }
-    .iv-ring-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
-    .iv-ring-num { font-size:56px; font-weight:700; letter-spacing:-0.04em; color:var(--text-primary); line-height:1; font-variant-numeric:tabular-nums; }
-    .iv-ring-unit { font-size:10px; font-weight:700; letter-spacing:0.22em; text-transform:uppercase; color:var(--text-tertiary); margin-top:10px; }
-    .iv-ring-label { font-size:12.5px; font-weight:600; margin-top:6px; letter-spacing:-0.005em; }
-    .iv-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding-top:22px; border-top:1px solid rgba(255,255,255,0.05); }
-    .iv-stat { position:relative; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); border-radius:12px; padding:12px 10px; text-align:center; }
-    .iv-stat-label { font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.14em; font-weight:700; margin-bottom:8px; }
-    .iv-stat-val { font-size:22px; font-weight:700; color:var(--text-primary); line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-0.03em; }
-    .iv-stat-sub { font-size:10px; color:var(--text-tertiary); margin-top:5px; font-family:var(--font-mono); }
-    @media (max-width:480px) { .iv-stats { grid-template-columns:repeat(2,1fr); } .iv-stat-val { font-size:20px; } }
-    .iv-verdict { margin-top:18px; padding:16px 18px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); border-left:2px solid rgba(255,255,255,0.40); border-radius:0 12px 12px 0; }
-    .iv-verdict-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-    .iv-verdict-eye { font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.18em; font-weight:700; }
-    .iv-verdict-badge { font-size:9.5px; font-weight:800; padding:3px 9px; border-radius:999px; letter-spacing:0.14em; text-transform:uppercase; border:1px solid; }
-    .iv-verdict-badge.green  { color:#6BE3A4; border-color:rgba(107,227,164,0.50); background:rgba(107,227,164,0.10); }
-    .iv-verdict-badge.yellow { color:#F2C063; border-color:rgba(242,192,99,0.50); background:rgba(242,192,99,0.10); }
-    .iv-verdict-badge.red    { color:#FF8A8A; border-color:rgba(255,138,138,0.50); background:rgba(255,138,138,0.10); }
-    .iv-verdict-headline { font-size:15px; font-weight:600; color:var(--text-primary); line-height:1.4; }
-    /* Activities */
-    .iv-acts { margin-top:22px; padding-top:22px; border-top:1px solid rgba(255,255,255,0.05); }
-    .iv-acts-eye { font-size:10px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:12px; }
-    .iv-act { display:grid; grid-template-columns:34px 1fr auto; gap:12px; align-items:center; padding:11px 12px; border-radius:10px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.04); margin-bottom:6px; }
-    .iv-act-icon { font-size:18px; text-align:center; }
-    .iv-act-body { min-width:0; }
-    .iv-act-name { font-size:13px; font-weight:600; color:var(--text-primary); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .iv-act-meta { font-size:11px; color:var(--text-tertiary); margin-top:2px; font-family:var(--font-mono); }
-    .iv-act-load { font-size:15px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; text-align:right; }
-    .iv-act-load-sub { font-size:9px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.1em; }
-    .iv-err { background:rgba(255,107,107,0.08); border:1px solid rgba(255,107,107,0.28); color:#FF8A8A; padding:10px 12px; border-radius:10px; font-size:11.5px; font-family:var(--font-mono); margin-bottom:14px; }
-  </style>
-  <div class="iv-section">
-    <div class="section-title">Training</div>
-    <div class="iv-card">
-      <div class="iv-head">
-        <div class="iv-brand"><span class="iv-brand-mark">i</span><span class="iv-brand-text">INTERVALS.ICU</span><span class="iv-live"><span class="iv-live-dot"></span>live</span></div>
-        <div class="iv-head-right">
-          <span id="ivUpdated" class="iv-updated">—</span>
-          <button id="ivRefresh" class="iv-refresh" type="button" aria-label="Refresh"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 10"/></svg></button>
-        </div>
-      </div>
-      <div id="ivErr" class="iv-err" style="display:none"></div>
-      <div class="iv-ring-wrap">
-        <svg class="iv-ring" viewBox="0 0 220 220" aria-hidden="true">
-          <circle class="iv-ring-track" cx="110" cy="110" r="96"/>
-          <circle class="iv-ring-fill" cx="110" cy="110" r="96" id="ivRingFill"/>
-        </svg>
-        <div class="iv-ring-center">
-          <div id="ivFormNum" class="iv-ring-num">—</div>
-          <div class="iv-ring-unit">form · tsb</div>
-          <div id="ivFormLabel" class="iv-ring-label">—</div>
-        </div>
-      </div>
-      <div class="iv-stats">
-        <div class="iv-stat"><div class="iv-stat-label">Fitness</div><div class="iv-stat-val" id="ivCtl">—</div><div class="iv-stat-sub">CTL</div></div>
-        <div class="iv-stat"><div class="iv-stat-label">Fatigue</div><div class="iv-stat-val" id="ivAtl">—</div><div class="iv-stat-sub">ATL</div></div>
-        <div class="iv-stat"><div class="iv-stat-label">HRV</div><div class="iv-stat-val" id="ivHrv">—</div><div class="iv-stat-sub">ms</div></div>
-        <div class="iv-stat"><div class="iv-stat-label">RHR</div><div class="iv-stat-val" id="ivRhr">—</div><div class="iv-stat-sub">bpm</div></div>
-      </div>
-      <div class="iv-verdict" id="ivVerdict" style="display:none">
-        <div class="iv-verdict-head"><span class="iv-verdict-eye">Today's call</span><span id="ivVerdictBadge" class="iv-verdict-badge"></span></div>
-        <div id="ivVerdictHead" class="iv-verdict-headline"></div>
-      </div>
-      <div class="iv-acts" id="ivActs" style="display:none">
-        <div class="iv-acts-eye">Recent activities</div>
-        <div id="ivActList"></div>
-      </div>
-    </div>
-  </div>
-  <script>
-  (function () {
-    const $ = (id) => document.getElementById(id);
-    const errEl = $('ivErr');
-    function showErr(m) { errEl.textContent = m || ''; errEl.style.display = m ? 'block' : 'none'; }
-
-    const C = 603.19;
-    function ringStroke(tsb) {
-      if (tsb == null) return '#FFF';
-      if (tsb >= 5) return '#6BE3A4';   // fresh
-      if (tsb >= -10) return '#F2C063'; // neutral / grey zone
-      if (tsb >= -30) return '#FF8A4D'; // fatigued
-      return '#FF8A8A';                 // very fatigued
-    }
-    function formLabel(tsb) {
-      if (tsb == null) return '—';
-      if (tsb >= 15) return 'Very fresh — race ready';
-      if (tsb >= 5) return 'Fresh — go hard';
-      if (tsb >= -10) return 'Neutral — train as planned';
-      if (tsb >= -30) return 'Fatigued — building load';
-      return 'Very fatigued — back off';
-    }
-    // Map TSB roughly onto a 0–100 ring fill (−40..+25 → 0..100)
-    function tsbToPct(tsb) {
-      const p = ((tsb + 40) / 65) * 100;
-      return Math.max(0, Math.min(100, p));
-    }
-    function verdict(tsb) {
-      if (tsb == null) return null;
-      if (tsb >= 5)  return { cls:'green',  badge:'GREEN',  headline:'Fresh legs. Good day to push — hit the hard session or the aero intervals.' };
-      if (tsb >= -20) return { cls:'yellow', badge:'YELLOW', headline:'Normal training load. Do the planned session, keep intensity controlled.' };
-      return { cls:'red', badge:'RED', headline:'Heavy fatigue. Easy or recovery only — let form come back before the next hard block.' };
-    }
-
-    const ICONS = { Ride:'🚴', VirtualRide:'🚴', Run:'🏃', Swim:'🏊', Walk:'🚶', Workout:'🏋️', WeightTraining:'🏋️', Hike:'🥾' };
-    function actIcon(type) { return ICONS[type] || '📊'; }
-    function fmtDist(m) { if (!m) return ''; return (m/1000).toFixed(1) + ' km'; }
-    function fmtDur(s) { if (!s) return ''; const h=Math.floor(s/3600), m=Math.round((s%3600)/60); return (h>0? h+'h ':'') + m + 'm'; }
-    function fmtDate(d) { try { return new Date(d).toLocaleDateString(undefined,{month:'short',day:'numeric'}); } catch { return ''; } }
-
-    async function loadData() {
-      showErr('');
-      try {
-        const r = await fetch('/api/intervals');
-        if (!r.ok) throw new Error('intervals ' + r.status + ': ' + (await r.text()));
-        const { wellness, activities } = await r.json();
-
-        // Wellness: pick the most recent record that has CTL/ATL
-        const wArr = Array.isArray(wellness) ? wellness.slice().sort((a,b)=> (a.id<b.id?1:-1)) : [];
-        const w = wArr.find(x => x && (x.ctl != null || x.atl != null)) || wArr[0] || {};
-        const ctl = w.ctl != null ? w.ctl : null;
-        const atl = w.atl != null ? w.atl : null;
-        const tsb = (ctl != null && atl != null) ? (ctl - atl) : null;
-        // HRV / RHR may live on a more recent record than the CTL one
-        // Only trust the single most recent day's record for HRV/RHR — don't
-        // scan further back, or a stale value from before Garmin was
-        // disconnected keeps showing up forever even once it's gone quiet.
-        const latest = wArr[0] || {};
-        const hrv = latest.hrv != null ? Math.round(latest.hrv) : null;
-        const rhr = latest.restingHR != null ? Math.round(latest.restingHR) : null;
-
-        // Ring = form
-        const fill = $('ivRingFill');
-        if (tsb != null) {
-          fill.style.strokeDashoffset = String(C * (1 - tsbToPct(tsb)/100));
-          fill.style.stroke = ringStroke(tsb);
-          $('ivFormNum').textContent = (tsb > 0 ? '+' : '') + Math.round(tsb);
-          const lab = $('ivFormLabel');
-          lab.textContent = formLabel(tsb);
-          lab.style.color = ringStroke(tsb);
-        }
-        if (ctl != null) $('ivCtl').textContent = Math.round(ctl);
-        if (atl != null) $('ivAtl').textContent = Math.round(atl);
-        if (hrv != null) $('ivHrv').textContent = String(hrv);
-        if (rhr != null) $('ivRhr').textContent = String(rhr);
-
-        // Verdict
-        const v = verdict(tsb);
-        if (v) {
-          $('ivVerdict').style.display = '';
-          const badge = $('ivVerdictBadge');
-          badge.textContent = v.badge;
-          badge.className = 'iv-verdict-badge ' + v.cls;
-          $('ivVerdictHead').textContent = v.headline;
-        }
-
-        // Activities: most recent first, top 10
-        const acts = (Array.isArray(activities) ? activities : [])
-          .slice()
-          .sort((a,b) => (a.start_date_local < b.start_date_local ? 1 : -1))
-          .slice(0, 10);
-        if (acts.length) {
-          $('ivActs').style.display = '';
-          $('ivActList').innerHTML = acts.map(a => {
-            const meta = [fmtDate(a.start_date_local), fmtDist(a.distance), fmtDur(a.moving_time || a.elapsed_time)].filter(Boolean).join(' · ');
-            const load = a.icu_training_load != null ? Math.round(a.icu_training_load) : '—';
-            const name = (a.name || a.type || 'Activity').replace(/[<>&]/g, '');
-            return `<div class="iv-act">
-              <div class="iv-act-icon">${actIcon(a.type)}</div>
-              <div class="iv-act-body">
-                <div class="iv-act-name">${name}</div>
-                <div class="iv-act-meta">${meta}</div>
-              </div>
-              <div><div class="iv-act-load">${load}</div><div class="iv-act-load-sub">load</div></div>
-            </div>`;
-          }).join('');
-        }
-
-        const now = new Date();
-        $('ivUpdated').textContent = 'Updated ' + now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-      } catch (e) {
-        showErr(e.message || String(e));
-      }
-    }
-
-    $('ivRefresh').addEventListener('click', async (e) => {
-      const btn = e.currentTarget; btn.classList.add('spin');
-      try { await loadData(); } finally { setTimeout(() => btn.classList.remove('spin'), 600); }
-    });
-
-    loadData();
-  })();
-  </script>
 
   <section id="water" class="water-embed">
     <div class="section-title">Water Tracker</div>
