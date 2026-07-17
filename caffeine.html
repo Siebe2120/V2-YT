@@ -412,6 +412,25 @@ body::after {
     }catch(e){}
   }
 
+  /* ============ Garmin (optional) — overrides WHOOP if both present ============ */
+  async function loadGarmin(){
+    try{
+      const r = await fetch('/api/garmin');
+      if(!r.ok) return;
+      const data = await r.json();
+      const d = data.sleep && data.sleep.dailySleepDTO;
+      if(d){
+        // Garmin's "Local" timestamp fields are epoch ms already shifted to
+        // represent local wall-clock time, so read them with the UTC
+        // getters — using getHours()/getMinutes() here would re-apply the
+        // browser's own timezone offset on top and give the wrong hour.
+        if(d.sleepStartTimestampLocal){ const dt=new Date(d.sleepStartTimestampLocal); bedHour=clamp(dt.getUTCHours()+dt.getUTCMinutes()/60,20,23.9); }
+        if(d.sleepEndTimestampLocal){ const dt=new Date(d.sleepEndTimestampLocal); wakeHour=clamp(dt.getUTCHours()+dt.getUTCMinutes()/60,4,11); }
+      }
+      renderAll();
+    }catch(e){}
+  }
+
   /* ============ Analysis: peak window, crash, coffee cutoff ============ */
   function sample(withCaf){ const pts=[]; for(let i=0;i<=144;i++){ const t=i/6; pts.push([t, energyAt(t, withCaf)]); } return pts; }
   function analysis(){
@@ -627,7 +646,7 @@ body::after {
   readProfile();
   renderResults('');
   renderAll();
-  loadWhoop();
+  loadWhoop().then(loadGarmin);
   setInterval(()=>{ if(scrubT==null) renderAll(); }, 60000);
 
   /* ============ Cloud sync ============ */
