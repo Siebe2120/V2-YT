@@ -2197,13 +2197,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const dt = new Date(y, m - 1, d + n);
     return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
   }
-  function nextMonday() {
-    const now = new Date();
-    const dow = now.getDay(); // 0=Sun..6=Sat
-    const d = new Date(now);
-    if (dow !== 1) d.setDate(d.getDate() + ((8 - dow) % 7)); // today if Monday, else the coming Monday
-    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
-  }
+  // Race day is Sunday, September 6, 2026 — Week 1 Monday is exactly
+  // 83 days earlier (11 full weeks + 6 days) so Week 12's Sunday lands
+  // on race day.
+  const RACE_DATE = '2026-09-06';
+  function raceStartDate() { return addDays(RACE_DATE, -83); }
 
   // Resolve the full PLAN into concrete {id, date, start, dur, ...} sessions
   // for a given Week-1-Monday start date, then apply any saved overrides
@@ -2434,7 +2432,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // ---------- Boot ----------
   function boot() {
     let startDate = loadJSON('ironman:startDate', null);
-    if (!startDate) { startDate = nextMonday(); saveJSON('ironman:startDate', startDate); }
+    // One-time correction: earlier versions defaulted to "next Monday from
+    // today" before the real race date was known. Force the correct
+    // race-derived start once, then leave the date field alone so manual
+    // edits via "Apply & Reschedule" stick on later visits.
+    if (!startDate || !loadJSON('ironman:startDateFixed', false)) {
+      startDate = raceStartDate();
+      saveJSON('ironman:startDate', startDate);
+      saveJSON('ironman:startDateFixed', true);
+    }
     $('ipStartDate').value = startDate;
     ALL_SESSIONS = resolveSchedule(startDate);
     const t = todayStr();
