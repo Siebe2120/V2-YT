@@ -1958,7 +1958,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Half-distance triathlon (IRONMAN 70.3) 12-week plan, transcribed
   // from the source PDF. w=week, d=weekday, s=session slot (1 or 2),
   // t=title, z=intensity zone label, m=duration in minutes,
-  // y=swim distance in yards (swims are given as distance, not time —
+  // y=swim distance in meters (swims are given as distance, not time —
   // duration is estimated from this, see swimMinutes()), x=full
   // workout detail (warm up / main set / warm down).
   // ============================================================
@@ -2130,14 +2130,18 @@ document.addEventListener('DOMContentLoaded', function () {
   function saveJSON(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 
   // Swim durations are given as distance, not time — estimate at a
-  // moderate ~40 yards/min pace including rest intervals, rounded to
+  // moderate ~37 meters/min pace including rest intervals, rounded to
   // the nearest 5 minutes. This is a rough estimate, not measured —
   // drag the block if a session runs long or short in practice.
-  function swimMinutes(yards) {
-    if (!yards) return null;
-    return Math.max(25, Math.round(yards / 40 / 5) * 5);
+  function swimMinutes(meters) {
+    if (!meters) return null;
+    return Math.max(25, Math.round(meters / 37 / 5) * 5);
   }
   function sessionMinutes(p) { return p.m != null ? p.m : swimMinutes(p.y); }
+  function fmtDist(meters) {
+    if (!meters) return '';
+    return meters >= 1000 ? (meters / 1000).toFixed(1).replace(/\.0$/, '') + 'km' : meters + 'm';
+  }
   function classify(t) {
     if (/^Run/i.test(t)) return 'run';
     if (/^Bike/i.test(t)) return 'bike';
@@ -2158,7 +2162,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const WORK_START = 8 * 60 + 30, EVENING_START = 18 * 60;
   const LUNCH_START = 11 * 60, LUNCH_END = 13 * 60;
   const MORNING_EARLIEST = 6 * 60 + 30;
-  const WEEKEND_START = 8 * 60;
+  const WEEKEND_START = 9 * 60 + 30;
 
   function isWeekend(d) { return d === 'Sat' || d === 'Sun'; }
 
@@ -2174,7 +2178,7 @@ document.addEventListener('DOMContentLoaded', function () {
       } else if (isOffBike(p.t) && prevEnd != null) {
         start = prevEnd + 5;
       } else if (isWeekend(p.d)) {
-        start = out.length === 0 ? WEEKEND_START : (prevEnd != null ? prevEnd + 30 : 10 * 60);
+        start = out.length === 0 ? WEEKEND_START : (prevEnd != null ? prevEnd + 30 : 11 * 60 + 30);
       } else if (isSwimType(p.t) && dur != null && dur <= 120) {
         start = Math.max(LUNCH_START, Math.min(12 * 60 - Math.round(dur / 2), LUNCH_END - dur));
       } else if (dur != null && dur <= 30) {
@@ -2224,7 +2228,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const ov = overrides[id] || {};
         resolved.push({
           id, week: p.w, dow: p.d, session: p.s, title: p.t, zone: p.z, detail: p.x,
-          type: classify(p.t), durMin: sessionMinutes(p),
+          type: classify(p.t), durMin: sessionMinutes(p), distM: p.y || null,
           date: ov.date || date,
           startMin: ov.start != null ? ov.start : times[i].start,
           done: ov.done !== undefined ? ov.done : null,
@@ -2294,7 +2298,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function openDetail(s) {
     $('ipDetailCard').style.display = '';
-    $('ipDetailTitle').textContent = s.title + (s.zone ? ' — ' + s.zone : '') + ' · ' + s.date + (s.startMin != null ? ' · ' + fmtClock(s.startMin) : '');
+    $('ipDetailTitle').textContent = s.title + (s.zone ? ' — ' + s.zone : '') + (s.distM ? ' · ' + fmtDist(s.distM) : '') + ' · ' + s.date + (s.startMin != null ? ' · ' + fmtClock(s.startMin) : '');
     $('ipDetailBody').textContent = s.detail || '';
   }
 
@@ -2354,7 +2358,8 @@ document.addEventListener('DOMContentLoaded', function () {
         ev.className = 'ip-event t-' + s.type + statusCls;
         ev.style.top = Math.max(0, (s.startMin - GRID_START_MIN) * PX_PER_MIN) + 'px';
         ev.style.height = Math.max(18, s.durMin * PX_PER_MIN - 2) + 'px';
-        ev.innerHTML = '<div class="ip-event-title">' + s.title.replace(/</g,'&lt;') + '</div><div class="ip-event-time">' + fmtClock(s.startMin) + ' · ' + s.durMin + 'm</div>';
+        const distPart = s.distM ? (' · ' + fmtDist(s.distM)) : '';
+        ev.innerHTML = '<div class="ip-event-title">' + s.title.replace(/</g,'&lt;') + '</div><div class="ip-event-time">' + fmtClock(s.startMin) + ' · ' + s.durMin + 'm' + distPart + '</div>';
         wireEvent(ev, s);
         body.appendChild(ev);
       });
