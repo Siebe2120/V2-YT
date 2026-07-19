@@ -574,6 +574,67 @@ body::after {
   .gm-progress-num { font-size: 36px; }
   .gm-time-input { width: 100px; }
 }
+
+/* ===== Training Plan — Outlook-style draggable week grid ===== */
+.ip-card { padding: 18px; }
+.ip-start-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 11.5px; color: var(--text-tertiary); flex-wrap: wrap; }
+.ip-start-row input { background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--text-primary); font-family: inherit; font-size: 12px; padding: 6px 8px; color-scheme: dark; }
+.ip-start-row button { background: transparent; border: 1px solid rgba(255,255,255,0.14); color: var(--text-secondary); border-radius: 8px; padding: 6px 10px; font-size: 11px; cursor: pointer; }
+.ip-start-row button:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.3); }
+
+.ip-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.ip-nav { display: flex; align-items: center; gap: 10px; }
+.ip-nav button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); color: var(--text-primary); cursor: pointer; font-size: 14px; }
+.ip-nav button:hover { background: rgba(255,255,255,0.08); }
+.ip-week-label { font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.02em; min-width: 190px; text-align: center; }
+.ip-pct-wrap { display: flex; align-items: center; gap: 8px; }
+.ip-pct { font-family: var(--font-mono); font-size: 15px; font-weight: 800; color: var(--success); }
+.ip-pct-label { font-size: 10.5px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.ip-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.ip-legend-item { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-tertiary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; }
+.ip-legend-dot { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+
+.ip-cal { display: flex; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.15); }
+.ip-hours { flex-shrink: 0; width: 42px; position: relative; padding-top: 26px; }
+.ip-hour-label { position: absolute; right: 6px; transform: translateY(-50%); font-family: var(--font-mono); font-size: 9px; color: var(--text-tertiary); }
+.ip-days { flex: 1; display: flex; position: relative; min-width: 0; }
+.ip-day-col { flex: 1; position: relative; border-left: 1px solid rgba(255,255,255,0.05); min-width: 0; }
+.ip-day-head { height: 26px; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
+.ip-day-head.is-today { color: var(--success); }
+.ip-grid-body { position: relative; }
+.ip-gridline { position: absolute; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.04); }
+.ip-banner { position: absolute; left: 3px; right: 3px; top: 3px; text-align: center; font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 2px; border-radius: 5px; }
+.ip-banner.rest { color: var(--text-tertiary); background: rgba(255,255,255,0.05); }
+.ip-banner.race { color: #0A0A0B; background: linear-gradient(90deg,#F2C063,#F2A65A); }
+
+.ip-event {
+  position: absolute; left: 3px; right: 3px;
+  border-radius: 7px; padding: 4px 6px; overflow: hidden;
+  cursor: grab; touch-action: none;
+  border: 1px solid rgba(255,255,255,0.14);
+  transition: box-shadow 0.15s;
+  z-index: 2;
+}
+.ip-event:active, .ip-event.dragging { cursor: grabbing; z-index: 20; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+.ip-event-title { font-size: 10.5px; font-weight: 700; color: #0A0A0B; line-height: 1.15; }
+.ip-event-time { font-size: 9px; color: rgba(10,10,11,0.7); font-family: var(--font-mono); margin-top: 1px; }
+.ip-event.t-run       { background: linear-gradient(160deg,#7DD3FC,#60A5FA); }
+.ip-event.t-bike      { background: linear-gradient(160deg,#F2C063,#E0A840); }
+.ip-event.t-swim      { background: linear-gradient(160deg,#6BE3A4,#4CC98A); }
+.ip-event.t-strength  { background: linear-gradient(160deg,#C9A3E8,#A87DD9); }
+.ip-event.t-other     { background: linear-gradient(160deg,#B8B6B0,#9C9A94); }
+.ip-event.status-done   { background: linear-gradient(160deg,#6BE3A4,#3FCB84) !important; }
+.ip-event.status-missed { background: linear-gradient(160deg,#FF9B9B,#FF6B6B) !important; }
+
+.ip-detail-hint { margin-top: 10px; font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
+
+@media (max-width: 760px) {
+  .ip-hours { width: 30px; }
+  .ip-day-head { font-size: 8px; }
+  .ip-event-title { font-size: 8.5px; }
+  .ip-event-time { display: none; }
+}
 </style>
 </head>
 <body>
@@ -617,6 +678,46 @@ body::after {
       <div class="day-ring-status"    id="dayRingStatus">Loading…</div>
       <div class="day-ring-remaining" id="dayRingRemaining">—</div>
       <div class="day-ring-hours">8:00 AM – 12:00 AM</div>
+    </div>
+  </div>
+
+  <!-- IRONMAN TRAINING PLAN -->
+  <div class="section">
+    <div class="section-title">Training Plan</div>
+    <div class="gm-card ip-card">
+      <div class="ip-start-row">
+        <span>Plan starts (Week 1, Monday):</span>
+        <input type="date" id="ipStartDate">
+        <button type="button" id="ipRegenerate">Apply &amp; Reschedule</button>
+      </div>
+      <div class="ip-legend">
+        <span class="ip-legend-item"><span class="ip-legend-dot" style="background:#60A5FA"></span>Run</span>
+        <span class="ip-legend-item"><span class="ip-legend-dot" style="background:#E0A840"></span>Bike</span>
+        <span class="ip-legend-item"><span class="ip-legend-dot" style="background:#4CC98A"></span>Swim</span>
+        <span class="ip-legend-item"><span class="ip-legend-dot" style="background:#A87DD9"></span>Strength</span>
+        <span class="ip-legend-item"><span class="ip-legend-dot" style="background:#3FCB84"></span>Done</span>
+        <span class="ip-legend-item"><span class="ip-legend-dot" style="background:#FF6B6B"></span>Missed</span>
+      </div>
+      <div class="ip-head">
+        <div class="ip-nav">
+          <button type="button" id="ipPrev" aria-label="Previous week">←</button>
+          <span class="ip-week-label" id="ipWeekLabel">—</span>
+          <button type="button" id="ipNext" aria-label="Next week">→</button>
+        </div>
+        <div class="ip-pct-wrap">
+          <span class="ip-pct" id="ipPct">0%</span>
+          <span class="ip-pct-label">done this week</span>
+        </div>
+      </div>
+      <div class="ip-cal">
+        <div class="ip-hours" id="ipHours"></div>
+        <div class="ip-days" id="ipDays"></div>
+      </div>
+      <div class="ip-detail-hint">Drag a session to a different day/time. Click a session to cycle Planned → Done → Missed. Tap a session's title area (not drag) to view its full workout detail below the grid.</div>
+      <div class="gm-card" id="ipDetailCard" style="display:none; margin-top:10px; background:rgba(255,255,255,0.03);">
+        <div class="gm-eyebrow" id="ipDetailTitle">—</div>
+        <div id="ipDetailBody" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; white-space:pre-line; margin-top:6px;"></div>
+      </div>
     </div>
   </div>
 
@@ -1850,11 +1951,515 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  // Half-distance triathlon (IRONMAN 70.3) 12-week plan, transcribed
+  // from the source PDF. w=week, d=weekday, s=session slot (1 or 2),
+  // t=title, z=intensity zone label, m=duration in minutes,
+  // y=swim distance in yards (swims are given as distance, not time —
+  // duration is estimated from this, see swimMinutes()), x=full
+  // workout detail (warm up / main set / warm down).
+  // ============================================================
+  const PLAN = [
+    // Week 1 — Build Phase 1: 11:30 to 12 hours
+    {w:1,d:'Mon',s:1,t:'Run',z:'Hard/Threshold',m:48,x:'Warm Up: 15 mins easy jog in Z2.\nMain Set: 4 x (5 mins in Z4 + 2 min recoveries in Z2).\nWarm Down: 5 mins easy jog in Z2.'},
+    {w:1,d:'Mon',s:2,t:'Swim',z:'Hard/Threshold',y:2200,x:'Warm Up: 1x(100FS Z2+100FS Z2+10secs rest), 1x(50FS Z2+50FS Z3+15secs rest), 1x(50Pull Z2+50Pull Z4+15secs rest).\nMain Set: 1x(400FS Z4+30secs rest), 1x(300Pull Z4+30secs rest), 2x(200FS Z4+30secs rests), 2x(200Pull Z4+30secs rests).\nWarm Down: 1x(100Pull Z2+100FS Z2), 1x(100Choice Z2).'},
+    {w:1,d:'Tue',s:1,t:'Bike',z:'Hard/Threshold',m:55,x:'Warm Up: 15 mins easy in Z2.\nMain Set: 6 x (3 mins in upper Z4 + 2 min recoveries in Z1-2).\nWarm Down: 10 mins easy spin in Z2.'},
+    {w:1,d:'Tue',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:1,d:'Wed',s:1,t:'Run',z:'Steady/Endurance',m:90,x:'A steady run, mainly in Z1-Z2. You should be able to chat at this intensity. This is your long run for the week and it will progress in duration. They will gradually build your endurance.'},
+    {w:1,d:'Wed',s:2,t:'Swim',z:'Steady/Endurance',y:1800,x:'Warm Up: 1x(100Pull Z2+100Drill Z2+5sec rests), 1x(100Drill Z2+100Pull Z2+5sec rests).\nMain Set: 2x(100Pull Z2+100Drill Z2+5sec rests), 1x(50Kick Z2+50Kick Z4+10secs rests), 2x(200Drill Z2+100Pull Z2+5sec rests), 1x(50Kick Z2+50Kick Z4+10secs rests).\nWarm Down: 1x(50Breast Z2+50FS Z2), 1x(50Back Z2+50FS Z2).'},
+    {w:1,d:'Thu',s:1,t:'Rest Day',z:'',m:null,x:'Allows for recovery whilst promoting adaptation to previous training stresses. Helps you get faster and keep injuries at bay.'},
+    {w:1,d:'Fri',s:1,t:'Swim',z:'Steady/Endurance',y:2400,x:'Warm Up: 1x(100FS Z2+100FS Z2+5secs rests), 1x(100FS Z2+100Drill Z2+5sec rests).\nMain Set: 1x(400Pull Z2+10secs rest), 1x(100FS Z3+5sec rests), 1x(200Pull Z2+5sec rests), 2x(200FS Z3+5sec rests).\nWarm Down: 2x(50Back Z2+50Breast Z2)+5secs rest, 1x(100Pull Z2+100Choice Z2).'},
+    {w:1,d:'Fri',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:1,d:'Sat',s:1,t:'Bike',z:'Moderate/Endurance',m:160,x:'Ride mainly in Z2 today. At some point (once you\'re warmed up) do: 4 x (10 mins in upper Z3 to low Z4 + 3 min recoveries in Z2).'},
+    {w:1,d:'Sun',s:1,t:'Bike',z:'Steady/Endurance',m:120,x:'Ride at an easy/steady intensity, mainly in Z2 today. You should be able to chat at this intensity. This ride will improve your efficiency for using fat for fuel and increase your ability to transport oxygen to your working muscles.'},
+    {w:1,d:'Sun',s:2,t:'Run Off the Bike',z:'Mod.Hard//Steady',m:30,x:'Get off your bike and run. Do the first 10 mins in Z3. Then ease down into Z2 for the last 20 minutes. Running off the bike at a higher intensity helps your body get used to transitioning from cycling to race-pace running.'},
+
+    // Week 2 — Build Phase 1: 12:30 to 13 hours
+    {w:2,d:'Mon',s:1,t:'Run',z:'Hard/Threshold',m:52,x:'Warm Up: 15 mins easy jog in Z2.\nMain Set: 4 x (6 mins in Z4 + 2 min recoveries in Z2).\nWarm Down: 5 mins easy jog in Z2.'},
+    {w:2,d:'Mon',s:2,t:'Swim',z:'Hard/Threshold',y:2400,x:'Warm Up: 1x(150FS Z2+50FS Z4+10sec rest), 1x(100FS Z2+100FS Z4+10sec rest), 1x(50FS Z2+150FS Z4+15sec rest), 2x(150FS Z4+15sec rests).\nMain Set: Repeat 2 sets of 500: 100FS Z2+5s, 100FS Z3+5s, 100FS Z4+5s, 100FS Z5+5s, 100Pull Z2+5s.\nWarm Down: 2x(100Kick Z2+100FS Z2+5secs rest), 1x(100Choice Z2).'},
+    {w:2,d:'Tue',s:1,t:'Bike',z:'Hard/Threshold',m:60,x:'Warm Up: 15 mins easy in Z2.\nMain Set: 8 x (3 mins in upper Z4 + 2 min recoveries in Z1-2).\nWarm Down: 5 mins easy spin in Z2.'},
+    {w:2,d:'Tue',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:2,d:'Wed',s:1,t:'Run',z:'Steady/Endurance',m:105,x:'Easy/steady run in Z1-Z2.'},
+    {w:2,d:'Wed',s:2,t:'Swim',z:'Recovery Swim',y:1800,x:'Warm Up: 1x(100FS Z2+100FS Z4+10secs rest), 2x(50Breast Z2+50Back Z2+5secs rest).\nMain Set: 100FS Z2+100Pull Z2+15s, 200FS Z2+200Pull Z2+15s, 200FS Z2+200Pull Z2+15s, 100FS Z2+100Pull Z2+15s.\nWarm Down: 1x(200Choice Z2).'},
+    {w:2,d:'Thu',s:1,t:'Rest Day',z:'',m:null,x:'Allows for recovery whilst promoting adaptation to previous training stresses.'},
+    {w:2,d:'Fri',s:1,t:'Swim',z:'Endurance',y:2600,x:'Warm Up: 2x(100FS breathe every 3+5sec rests), 1x(100Pull Z2+100Drill Z2+5sec rests), 2x(100FS breathe every 5+5sec rests).\nMain Set: 2x(400FS Z2+50Z4+5sec rests), 2x(200Pull Z2+100FS Z3+5sec rests), 2x(50FS Z2+50FS Z4+5sec rests), 1x(100Pull Z2+50FS Z4+5secs rest).\nWarm Down: 1x(150 Choice Z2).'},
+    {w:2,d:'Fri',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:2,d:'Sat',s:1,t:'Bike',z:'Moderate/Endurance',m:180,x:'Ride mainly in Z2 today. At some point (once warmed up) do: 3 x (15 mins in upper Z3 to low Z4 + 3 min recoveries in Z2).'},
+    {w:2,d:'Sun',s:1,t:'Bike',z:'Steady/Endurance',m:130,x:'Ride mainly in Z2.'},
+    {w:2,d:'Sun',s:2,t:'Run Off the Bike',z:'Mod.Hard/Steady',m:35,x:'Get off bike and run. First 15 mins in Z3. Then ease into Z2 for the last 20 mins.'},
+
+    // Week 3 — Build Phase 1: 13:30 to 14 hours
+    {w:3,d:'Mon',s:1,t:'Run',z:'V.Hard/VO2 Max',m:52,x:'Warm Up: 15 mins easy jog in Z2.\nMain Set: 6 min Z4 + 2 min recovery Z1-2, 2x(3 min Z5 + 2 min recovery Z1-2), 4x(1:30 min Z5 + 2 min recovery Z1-2).\nWarm Down: 5 mins easy jog in Z2.'},
+    {w:3,d:'Mon',s:2,t:'Swim',z:'Hard/Threshold',y:2400,x:'Warm Up: 1x(100FS Z2+100Pull Z2+5sec rests), 1x(50FS Z2+50FS Z3+10sec rests), 1x(100FS Z2+100Drill Z4+15sec rests).\nMain Set: 1x(400FS Z4+30secs rest), 1x(400Pull Z4+30secs rest), 2x(200FS Z4+15sec rests), 2x(200Pull Z4+15sec rests).\nWarm Down: 1x(100Pull Z2+100FS Z2), 1x(100Choice Z2).'},
+    {w:3,d:'Tue',s:1,t:'Bike',z:'Hard/Threshold',m:50,x:'Warm Up: 15 mins in Z2.\nMain Set: 5 x (5 mins in low Z4 + 60 sec recoveries in Z1).\nWarm Down: 5 mins in Z2.'},
+    {w:3,d:'Tue',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:3,d:'Wed',s:1,t:'Run',z:'Steady/Endurance',m:120,x:'Run in Z1-Z2. Consume 20g of carbohydrate every 30 minutes.'},
+    {w:3,d:'Wed',s:2,t:'Swim',z:'Endurance/Tech',y:2100,x:'Warm Up: 1x(100Pull Z2+100Drill Z2+5sec rests), 1x(100Drill Z2+100Pull Z2+5sec rests).\nMain Set: 2x(200Pull Z2+100Drill Z2+5sec rests), 1x(50Kick Z2+50Kick Z4+10sec rests), 2x(200Drill Z2+100Pull Z2+5sec rests), 1x(50Kick Z2+50Kick Z4+10sec rests).\nWarm Down: 1x(50Breast Z2+50FS Z2), 1x(50Back Z2+50FS Z2), 1x(100Choice Z2).'},
+    {w:3,d:'Thu',s:1,t:'Rest Day',z:'',m:null,x:'Allows for recovery whilst promoting adaptation to previous training stresses.'},
+    {w:3,d:'Fri',s:1,t:'Swim',z:'Steady/Endurance',y:2800,x:'Warm Up: 1x(100FS Z2+100FS Z2+5sec rest), 2x(100FS Z2+100Drill Z2+5sec rests).\nMain Set: 1x(400Pull Z2+10secs rest), 4x(100FS Z3+5sec rests), 3x(200Pull Z2+5sec rests), 2x(200FS Z3+5sec rests).\nWarm Down: 2x(50Back Z2+50Breast Z2)+5secs rest, 1x(100Pull Z2+100Choice Z2).'},
+    {w:3,d:'Fri',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:3,d:'Sat',s:1,t:'Bike',z:'Hard/Threshold',m:200,x:'Ride mainly in Z2. At some point do: 2 x (20 mins in upper Z3 to low Z4 + 3 min recoveries in Z2).'},
+    {w:3,d:'Sun',s:1,t:'Bike',z:'Steady/Endurance',m:140,x:'Ride mainly in Z2.'},
+    {w:3,d:'Sun',s:2,t:'Run Off the Bike',z:'Mod.Hard//Steady',m:40,x:'Get off bike and run. First 20 mins in Z3. Ease into Z2 for the last 20 mins.'},
+
+    // Week 4 — Active Recovery Week: 6:30 to 7 hours
+    {w:4,d:'Mon',s:1,t:'Swim',z:'Steady/Endurance',y:2000,x:'Warm Up: 1x(100FS Z2+100Drill Z2+5secs rest), 2x(50Breast Z2+50Back Z2+5secs rest).\nMain Set: 100FS Z2+100Pull Z2+15s, 200FS Z2+300Pull Z2+15s, 300FS Z2+200Pull Z2+15s, 100FS Z2+100Pull Z2+15s.\nWarm Down: 1x(200 Choice Z2).'},
+    {w:4,d:'Tue',s:1,t:'Run',z:'Steady/Endurance',m:45,x:'Nice and easy, at a chatty pace mainly in Z1-Z2.'},
+    {w:4,d:'Tue',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:4,d:'Wed',s:1,t:'Swim',z:'Endurance/Tech',y:2000,x:'Warm Up: 1x(100FS Z2+100Drill Z2+5secs), 1x(200Pull Z2+200Drill Z2+5secs).\nMain Set: 4x(100Drill Z2+100FS Z3+10sec rests).\nWarm Down: 2x(50Back Z2+50Breast Z2+5sec rests), 2x(50Pull Z2+50Drill Z2+5sec rests), 1x(200FS Z2).'},
+    {w:4,d:'Thu',s:1,t:'Bike',z:'V.Hard/VO2 Max',m:52,x:'Warm Up: 15 mins in Z2.\nMain Set: 6 x (3 mins in upper Z4 to low Z5 + 2 min recoveries in Z1-2).\nWarm Down: 5 mins easy spin in Z2.'},
+    {w:4,d:'Thu',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:4,d:'Fri',s:1,t:'Rest Day',z:'',m:null,x:'Every fourth week is an active recovery week, with less training, to help your body recover and adapt.'},
+    {w:4,d:'Sat',s:1,t:'Run',z:'Hard/Threshold',m:42,x:'Warm Up: 15 mins in Z2.\nMain Set: 2 x (3, 2, 1 mins in Z4 + 60 sec recoveries in Z1).\nWarm Down: 10 mins in Z2.'},
+    {w:4,d:'Sun',s:1,t:'Bike',z:'Steady/Endurance',m:120,x:'Nice and easy ride today, enjoy and stop for a coffee if you like!'},
+
+    // Week 5 — Peak Phase 1: 11 to 11:30 hours
+    {w:5,d:'Mon',s:1,t:'Run',z:'Hard/Threshold',m:53,x:'Warm Up: 15 mins in Z2.\nMain Set: 3x(4 min low Z4 + 60 sec recoveries Z1), 3 min Z2, 3x(4 min low Z4 + 60 sec recoveries Z1).\nWarm Down: 5 mins in Z2.'},
+    {w:5,d:'Mon',s:2,t:'Swim',z:'Hard/Threshhold',y:2200,x:'Warm Up: 1x(100FS Z2+100FS Kick Z2+5secs rest), 1x(100Drill Z2+100Pull Z2+5secs rest).\nMain Set: 3x(100Pull Z2+100FS Z3+5secs rest), 3x(100Pull Z2+100FS Z4+10secs rest), 2x(100Pull Z2+100FS Z5+15secs rest).\nWarm Down: 2x(50FS Z2+50Choice Z2).'},
+    {w:5,d:'Tue',s:1,t:'Bike',z:'Steady/Endurance',m:63,x:'Warm Up: 10 min Z2, 5x(20sec upper Z4+40sec low Z2).\nMain Set: 10min upper Z2+60s recovery low Z2, 9min upper Z2+60s recovery low Z2, 8min upper Z2+60s recovery low Z2, 7min upper Z2+60s recovery low Z2.\nWarm Down: 10 mins in Z2.'},
+    {w:5,d:'Tue',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:5,d:'Wed',s:1,t:'Swim',z:'Hard/Threshold',y:2600,x:'Warm Up: 1x(100FS Z2+100FS Z4+10secs rest), 1x(50FS Z2+150FS Z4+15secs rest), 1x(200FS Z4+20secs rest).\nMain Set: Repeat 3 sets of 500: 100FS Z2+5s, 100FS Z3+5s, 100FS Z4+5s, 100FS Z5+5s, 100Pull Z2+5s.\nWarm Down: 1x(100Kick Z2+100FS Z2+5sec rest), 1x(50Back Z2+50Breast Z2+5secs rest).'},
+    {w:5,d:'Thu',s:1,t:'Bike',z:'Mod.Hard/Tempo',m:56,x:'Warm Up: 5 min mid Z2, 4 min upper Z2, 60 sec low Z2.\nMain Set: 15min upper Z3+2min recovery Z1, 12min upper Z3+2min recovery Z1, 8min upper Z3+2min recovery Z1.'},
+    {w:5,d:'Thu',s:2,t:'Run Off the Bike',z:'Threshold/Steady',m:15,x:'Get off your bike and run. Do the first 5 minutes in Z4. Then ease into Z2 for the remainder. Optional: Strength and Conditioning 15 mins.'},
+    {w:5,d:'Fri',s:1,t:'Rest Day',z:'',m:null,x:'Allows for recovery whilst promoting adaptation to previous training stresses.'},
+    {w:5,d:'Sat',s:1,t:'Bike',z:'Mod.Hard/Tempo',m:180,x:'Warm Up: 30 min Z2.\nMain Set: 8 x (10 min Z3 + 5 min Z2).\nWarm Down: 30 mins in Z1-2.'},
+    {w:5,d:'Sat',s:2,t:'Run Off the Bike',z:'Threshold/Steady',m:30,x:'Get off your bike and run. First 10 mins in Z3. Ease into Z2 for the last 20 mins.'},
+    {w:5,d:'Sun',s:1,t:'Run',z:'Steady/Endurance',m:90,x:'All in Z2.'},
+    {w:5,d:'Sun',s:2,t:'Open Water Swim',z:'Steady/Endurance',y:1500,x:'Open water swim all in Z2. Take as many rests as you want. This first swim is just to get used to the environment. We\'ll do some faster sections from next week onwards, but just take it easy today.'},
+
+    // Week 6 — Peak Phase 1: 11:30 to 12 hours
+    {w:6,d:'Mon',s:1,t:'Run',z:'Hard/Threshold',m:58,x:'Warm Up: 15 mins in Z2.\nMain Set: 4x(4 min low Z4 + 60 sec recoveries Z1), 3 min Z2, 4x(4 min low Z4 + 60 sec recoveries Z1).\nWarm Down: 5 mins in Z2.'},
+    {w:6,d:'Mon',s:2,t:'Swim',z:'Hard/Threshold',y:2200,x:'Warm Up: 1x(100FS Z2+100Drill Z2+10secs rest), 1x(50Pull Z2+50Pull Z4+10secs rest).\nMain Set: 3x(200FS Z3+10sec rests), 5x(100FS Z4+10sec rests), 8x(50FS Z5+15secs rest).\nWarm Down: 2x(50FS Z2+50Back Z2+5secs rest), 1x(100Choice Z2).'},
+    {w:6,d:'Tue',s:1,t:'Bike',z:'Steady/Endurance',m:57,x:'Warm Up: 5 min mid Z2, 5x(15sec Z3+45sec low Z2).\nMain Set: 15min upper Z2+60s recovery low Z2, 13min upper Z2+60s recovery low Z2, 11min upper Z2+60s recovery low Z2.\nWarm Down: 5 min mid Z2.'},
+    {w:6,d:'Tue',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:6,d:'Wed',s:1,t:'Swim',z:'Hard/Threshold',y:2600,x:'Warm Up: 1x(100FS Z2+100Pull Z2+5secs rest), 1x(100FS Z2+100Pull Z3+10secs rest), 1x(100FS Z2+100Pull Z4+15secs rest).\nMain Set: 1x(400FS Z4+30secs rest), 1x(400Pull Z4+30secs rest), 2x(200FS Z4+15sec rests), 2x(200Pull Z4+15sec rests).\nWarm Down: 1x(100Pull Z2+100FS Z2), 1x(200Choice Z2).'},
+    {w:6,d:'Thu',s:1,t:'Bike',z:'Mod.Hard/Tempo',m:61,x:'Warm Up: 5 min mid Z2, 4 min upper Z2, 60 sec low Z2.\nMain Set: 18min upper Z3+2min recovery Z1, 13min upper Z3+2min recovery Z1, 9min upper Z3+2min recovery Z1.\nWarm Down: 5 mins in Z2.'},
+    {w:6,d:'Thu',s:2,t:'Run Off the Bike',z:'Hard/Steady',m:30,x:'Get off your bike and run. First 5 mins in Z4. Ease into Z2 for the remainder.'},
+    {w:6,d:'Fri',s:1,t:'Rest Day',z:'',m:null,x:'Allows for recovery whilst promoting adaptation to previous training stresses.'},
+    {w:6,d:'Sat',s:1,t:'Bike',z:'Mod.Hard/Tempo',m:180,x:'Warm Up: 30 min Z2.\nMain Set: 7 x (15 min Z3 + 5 min Z2).\nWarm Down: 10 mins in Z1-2.'},
+    {w:6,d:'Sat',s:2,t:'Run Off the Bike',z:'Mod.Hard/Steady',m:30,x:'Get off your bike and run. First 10 mins in Z3. Ease into Z2 for the last 20 mins.'},
+    {w:6,d:'Sun',s:1,t:'Run',z:'Steady/Endurance',m:95,x:'All in Z2.'},
+    {w:6,d:'Sun',s:2,t:'Open Water Swim',z:'Mod.Hard/Tempo',y:2200,x:'Warm Up: 1x(100FS Z2+5secs rest), 1x(100Drill Z2+5secs rest).\nMain Set: 2x(800FS Z3+20sec rests).\nWarm Down: 1x(400FS Z2).'},
+
+    // Week 7 — Peak Phase 1: 12 to 12:30 hours
+    {w:7,d:'Mon',s:1,t:'Bike',z:'Steady/Endurance',m:60,x:'Warm Up: 10 min Z2, 5x(30sec upper Z2+30sec low Z2).\nMain Set: 5 x (5 min upper Z2 + 3 min mid Z2).\nWarm Down: 5 mins in low Z2.'},
+    {w:7,d:'Mon',s:2,t:'Swim',z:'Hard/Threshhold',y:2400,x:'Warm Up: 1x(100FS Z2+100FS Kick Z2+5sec rests), 1x(200FS Z2+150FS Z4+15secs rest).\nMain Set: Repeat 3 sets of 500: 100FS Z2+5s, 100FS Z3+5s, 100FS Z4+5s, 100FS Z5+5s, 100Pull Z2+5s.\nWarm Down: 1x(200Kick Z2+100FS Z2+5secs rest), 1x(100Choice Z2).'},
+    {w:7,d:'Tue',s:1,t:'Run',z:'Hard/Threshold',m:63,x:'Warm Up: 15 mins in Z2.\nMain Set: 4x(4 min low Z4 + 60 sec recoveries Z1), 3 min recovery Z2, 4x(4 min low Z4 + 60 sec recoveries Z1).\nWarm Down: 5 mins in Z2.'},
+    {w:7,d:'Tue',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:7,d:'Wed',s:1,t:'Swim',z:'Hard/Threshold',y:2600,x:'Warm Up: 1x(100FS Z2+150FS Z4+10secs rest), 1x(200FS Z2+20secs rest).\nMain Set: Repeat 3 sets of 500: 100FS Z2+5s, 100FS Z3+5s, 100FS Z4+5s, 100FS Z5+5s, 100Pull Z2+5s.\nWarm Down: 1x(200Kick Z2+100FS Z2+5secs rest), 1x(100Choice Z2).'},
+    {w:7,d:'Thu',s:1,t:'Bike',z:'Mod.Hard/Tempo',m:66,x:'Warm Up: 5 min mid Z2, 4 min upper Z2, 60 sec low Z2.\nMain Set: 20min upper Z3+2min recovery Z1, 15min upper Z3+2min recovery Z1, 10min upper Z3+2min recovery Z1.\nWarm Down: 5 mins in Z2.'},
+    {w:7,d:'Thu',s:2,t:'Run Off the Bike',z:'Hard/Steady Mod.',m:30,x:'Get off your bike and run. First 5 mins in Z4. Ease into Z2 for the remainder. Optional: Strength and Conditioning 15 mins.'},
+    {w:7,d:'Fri',s:1,t:'Rest Day',z:'',m:null,x:'Allows for recovery whilst promoting adaptation to previous training stresses.'},
+    {w:7,d:'Sat',s:1,t:'Bike',z:'Mod.Hard/Tempo',m:180,x:'Warm Up: 10 min Z2.\nMain Set: 8 x (15 min Z3 + 5 min recoveries Z2).\nWarm Down: 10 mins in Z2.'},
+    {w:7,d:'Sat',s:2,t:'Run Off the Bike',z:'Mod.Hard/Steady',m:30,x:'Get off your bike and run. First 10 mins in Z3. Ease into Z2 for the last 20 mins.'},
+    {w:7,d:'Sun',s:1,t:'Run',z:'Steady/Endurance',m:100,x:'All in Z2.'},
+    {w:7,d:'Sun',s:2,t:'Open Water Swim',z:'Mod.Hard/Tempo',y:2400,x:'Warm Up: 1x(100FS Z2+5sec rest), 1x(100Drill Z2+5sec rest).\nMain Set: 3x(700FS Z3+20sec rests).\nWarm Down: 1x(100FS Z2).'},
+
+    // Week 8 — Active Recovery Week: 6:30 to 7 hours
+    {w:8,d:'Mon',s:1,t:'Rest Day',z:'',m:null,x:'Every fourth week is an active recovery week, with less training, to help your body recover and adapt.'},
+    {w:8,d:'Tue',s:1,t:'Bike',z:'Hard/Threshold',m:52,x:'Warm Up: 15 mins in Z2.\nMain Set: 9 x (2 min upper Z4 to low Z5 + 90 sec recoveries in Z1-2).\nWarm Down: 5 mins easy spin in Z2.'},
+    {w:8,d:'Wed',s:1,t:'Swim',z:'Endurance/Tech',y:2100,x:'Warm Up: 1x(100Pull Z2+100Drill Z2+5secs rest), 1x(100Drill Z2+100Pull Z2+5secs rest).\nMain Set: 2x(200Pull Z2+100Drill Z2+5secs rest), 1x(50Kick Z2+50Kick Z4+10secs rest), 2x(200Drill Z2+100Pull Z2+5secs rest), 1x(50Kick Z2+50Kick Z4+10secs rest).\nWarm Down: 1x(50Breast Z2+50FS Z2), 1x(50Back Z2+50FS Z2), 1x(100Choice Z2).'},
+    {w:8,d:'Wed',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:8,d:'Thu',s:1,t:'Run',z:'Hard/Threshold',m:35,x:'Warm Up: 10 mins easy jog in Z2.\nMain Set: 20 mins in Z4.\nWarm Down: 5 mins easy jog in Z2.'},
+    {w:8,d:'Fri',s:1,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:8,d:'Sat',s:1,t:'Bike',z:'Steady/Endurance',m:120,x:'Easy/steady Z2 ride today.'},
+    {w:8,d:'Sat',s:2,t:'Run Off the Bike',z:'Endurance',m:60,x:'Z2 steady run off the bike.'},
+    {w:8,d:'Sun',s:1,t:'Open Water Swim',z:'Mod.Hard/Tempo',y:2000,x:'Warm Up: 1x(400FS Z5, Beach or Deep Water Starts+15secs rest).\nMain Set: 4x(50FS Z5, Beach or Deep Water Starts+20sec rests), 1x(1000FS Z3+45secs rest).\nWarm Down: 1x(400FS Z2).'},
+
+    // Week 9 — Peak Phase 2: 12 to 12:30 hours
+    {w:9,d:'Mon',s:1,t:'Run',z:'V.Hard/VO2 Max',m:52,x:'Warm Up: 15 mins easy jog in Z2.\nMain Set: 4x(90secs Z5+2min recoveries Z1-2), 2x(3 min Z5+2min recoveries Z1-2), 6min Z4+2min recovery Z1-2.\nWarm Down: 5 mins easy jog in Z2.'},
+    {w:9,d:'Mon',s:2,t:'Swim',z:'Endurance/Tech',y:2000,x:'Warm Up: 1x(100FS Z2 breathe every 3+5secs rest), 1x(200Pull Z2 breathe every 5+5secs rest), 1x(200FS Z2 breathe every 3+5secs rest).\nMain Set: 4x(100Drill Z2+100FS Z3+10sec rests).\nWarm Down: 2x(50Back Z2+50Breast Z2+5secs rest), 2x(50Pull Z2+50Drill Z2+5secs rest), 1x(200Choice Z2).'},
+    {w:9,d:'Tue',s:1,t:'Bike',z:'Hard/Threshold',m:62,x:'Warm Up: 15 mins in Z2.\nMain Set: 6min Z4+2min recovery Z2, 7min Z4+2min recovery Z2, 8min Z4+2min recovery Z2, 7min Z4+2min recovery Z2, 6min Z4.\nWarm Down: 5 mins in Z2.'},
+    {w:9,d:'Tue',s:2,t:'Run Off the Bike',z:'Hard/Steady',m:15,x:'Get off your bike and run. First 5 mins in Z4. Ease into Z2 for the remainder. Optional: Strength and Conditioning 15 mins.'},
+    {w:9,d:'Wed',s:1,t:'Swim',z:'Hard/Threshold',y:2600,x:'Warm Up: 1x(100FS Z2+100Pull Z2+5secs rest), 1x(100FS Z2+100Pull Z3+10secs rest), 1x(100FS Z2+100Pull Z4+15secs rest).\nMain Set: 1x(400FS Z4+30secs rest), 1x(400Pull Z4+30secs rest), 2x(200FS Z4+15sec rests), 2x(200Pull Z4+15sec rests).\nWarm Down: 1x(100Pull Z2+100FS Z2), 1x(200Choice Z2).'},
+    {w:9,d:'Thu',s:1,t:'Bike',z:'Endurance',m:90,x:'Mostly Z2 today.'},
+    {w:9,d:'Thu',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:9,d:'Fri',s:1,t:'Rest Day',z:'',m:null,x:'Allows for recovery whilst promoting adaptation to previous training stresses.'},
+    {w:9,d:'Sat',s:1,t:'Bike',z:'Mod.Hard/Tempo',m:168,x:'Warm Up: 1 hour in Z2.\nMain Set: 6 x (10 min Z3 + 3 min recoveries Z2).\nWarm Down: 30 mins in Z2.'},
+    {w:9,d:'Sat',s:2,t:'Run Off the Bike',z:'Mod.Hard/Steady',m:30,x:'Straight after your ride, grab your running shoes and run for 15 minutes all in Z3. Ease down into Z2 for 15 minutes.'},
+    {w:9,d:'Sun',s:1,t:'Run',z:'Steady/Endurance',m:90,x:'All in Z2, nice and steady.'},
+    {w:9,d:'Sun',s:2,t:'Open Water Swim',z:'Mod.Hard/Tempo',y:2800,x:'Warm Up: 1x(100FS Z2+5sec rests), 1x(100Drill Z2+5sec rests).\nMain Set: 3x(800FS Z3+20sec rests).\nWarm Down: 1x(200FS Z2).'},
+
+    // Week 10 — Peak Phase 2: 10:30 to 11 hours
+    {w:10,d:'Mon',s:1,t:'Run',z:'V.Hard/VO2 Max',m:43,x:'Warm Up: 10 mins in Z2.\nMain Set: 7 x (2 min Z5 + 2 min recoveries in Z1-2).\nWarm Down: 5 mins in Z2.'},
+    {w:10,d:'Mon',s:2,t:'Swim',z:'Steady/Recovery',y:1800,x:'Warm Up: 1x(100FS Z2+100Drill Z2+5secs rest), 2x(50Breast Z2+50Back Z2+5secs rest).\nMain Set: 100FS Z2+100Pull Z2+15s, 200FS Z2+200Pull Z2+15s, 200FS Z2+200Pull Z2+15s, 100FS Z2+100Pull Z2+15s.\nWarm Down: 1x(200Choice Z2).'},
+    {w:10,d:'Tue',s:1,t:'Bike',z:'Hard/Threshold',m:50,x:'Warm Up: 10 mins in Z2.\nMain Set: 5 x (5 min Z4 + 2 min recoveries in Z2).\nWarm Down: 5 mins in Z2.'},
+    {w:10,d:'Tue',s:2,t:'Run Off the Bike',z:'Hard/Steady',m:15,x:'Get off your bike and run. First 5 mins in Z4. Ease into Z2 for the remainder. Optional: Strength and Conditioning 15 mins.'},
+    {w:10,d:'Wed',s:1,t:'Swim',z:'Hard/Threshold',y:2600,x:'Warm Up: 1x(100FS Z2+100FS Z4+10sec rests), 1x(50FS Z2+150FS Z4+15sec rests), 1x(200FS Z4+20secs rest).\nMain Set: Repeat 3 sets of 500: 100FS Z2+5s, 100FS Z3+5s, 100FS Z4+5s, 100FS Z5+5s, 100Pull Z2+5s.\nWarm Down: 1x(200Kick Z2+100FS Z2+5secs rest), 1x(100Choice Z2).'},
+    {w:10,d:'Thu',s:1,t:'Bike',z:'Steady/Endurance',m:90,x:'Ride mostly in Z2.'},
+    {w:10,d:'Thu',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:10,d:'Fri',s:1,t:'Rest Day',z:'',m:null,x:'Allows for recovery whilst promoting adaptation to previous training stresses.'},
+    {w:10,d:'Sat',s:1,t:'Bike',z:'Mod.Hard/Tempo',m:122,x:'Warm Up: 30 min Z2.\nMain Set: 4 x (15 min Z3 + 3 min recoveries Z2).\nWarm Down: 20 mins in Z2.'},
+    {w:10,d:'Sat',s:2,t:'Run Off the Bike',z:'Mod.Hard/Steady',m:30,x:'Do 20 minutes in Z3, then settle into a steady Z2 pace.'},
+    {w:10,d:'Sun',s:1,t:'Run',z:'Steady/Endurance',m:90,x:'Steady run in Z1-Z2. This really doesn\'t need to be fast. It\'s supposed to be conversational pace.'},
+    {w:10,d:'Sun',s:2,t:'Open Water Swim',z:'Mod.Hard/Tempo',y:3000,x:'Warm Up: 1x(100FS Z2+5sec rests), 1x(100Drill Z2+5secs rests).\nMain Set: 3x(900FS Z3+25sec rests).\nWarm Down: 1x(100FS Z2).'},
+
+    // Week 11 — Peak Phase 2: 8:30 to 9 hours
+    {w:11,d:'Mon',s:1,t:'Swim',z:'Mod.Hard/Tempo',y:1900,x:'Warm Up: 1x(300FS Z2+30secs rest), 1x(50FS Z2+50FS Z3).\nMain Set: 1x(1500FS Z3 to Z4+60secs rest).\nWarm Down: 1x(100Choice Z2).'},
+    {w:11,d:'Mon',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:11,d:'Tue',s:1,t:'Bike',z:'Hard/Threshold',m:43,x:'Warm Up: 10 mins in Z2.\nMain Set: 4min low Z4+30s recovery Z1, 5min low Z4+30s recovery Z1, 6min low Z4+2min recovery Z1, 5min low Z4+30s recovery Z1, 4min low Z4.\nWarm Down: 5 mins in Z2.'},
+    {w:11,d:'Tue',s:2,t:'Run Off the Bike',z:'Steady/Endurance',m:15,x:'Get off your bike and run. All in Z2 today.'},
+    {w:11,d:'Wed',s:1,t:'Swim',z:'Hard/Threshold',y:2400,x:'Warm Up: 1x(100FS Z2+100Pull Z2+5secs rest), 1x(50FS Z2+50FS Z3+10secs rest), 1x(100FS Z2+100Pull Z4+15secs rest).\nMain Set: 1x(400FS Z4+30secs rest), 1x(400Pull Z4+30secs rest), 2x(200FS Z4+15sec rests), 2x(200Pull Z4+15sec rests).\nWarm Down: 1x(100Pull Z2+100FS Z2), 1x(100Choice Z2).'},
+    {w:11,d:'Thu',s:1,t:'Run',z:'V.Hard/VO2 Max',m:38,x:'Warm Up: 15 mins easy jog in Z2.\nMain Set: 3 x (3 min Z5 + 2 min recoveries in Z2).\nWarm Down: 8 mins easy jog in Z2.'},
+    {w:11,d:'Thu',s:2,t:'Strength and Conditioning',z:'',m:15,x:'Please refer to the video guide in Phil\'s Tips.'},
+    {w:11,d:'Fri',s:1,t:'Rest Day',z:'',m:null,x:'Allows for recovery whilst promoting adaptation to previous training stresses.'},
+    {w:11,d:'Sat',s:1,t:'Bike',z:'Mod.Hard/Tempo',m:106,x:'Warm Up: 30 min Z2.\nMain Set: 2 x (20 min upper Z3 to low Z4 + 3 min recoveries Z2).\nWarm Down: 30 mins in Z2.'},
+    {w:11,d:'Sat',s:2,t:'Run Off the Bike',z:'Mod.Hard/Steady',m:30,x:'Straight after your ride, grab your shoes and run 15 minutes all in Z3. Ease down into Z2 for 15 minutes.'},
+    {w:11,d:'Sun',s:1,t:'Run',z:'Steady/Endurance',m:45,x:'Nice and steady today, all in Z2.'},
+    {w:11,d:'Sun',s:2,t:'Open Water Swim',z:'Mod.Hard/Tempo',y:2800,x:'Warm Up: 1x(100FS Z2+5secs rest), 1x(100Drill Z2+5secs rest).\nMain Set: 3x(800FS Z3+20sec rests).\nWarm Down: 1x(200FS Z2).'},
+
+    // Week 12 — Race Taper Week: 3 to 3:30 hours
+    {w:12,d:'Mon',s:1,t:'Rest Day',z:'',m:null,x:'This week you will maintain your fitness and eliminate any traces of fatigue. It\'s a good time to double check your race day logistics and strategies.'},
+    {w:12,d:'Tue',s:1,t:'Bike',z:'Hard/Threshold',m:35,x:'Warm Up: 15 mins in Z2.\nMain Set: 4 x (3 min Z4 + 60 sec recoveries in Z1-2).\nWarm Down: 5 mins easy jog in Z2.'},
+    {w:12,d:'Wed',s:1,t:'Run',z:'Hard/Threshold',m:30,x:'Warm Up: 15 mins easy Z2 jog.\nMain Set: 10 mins in low Z4.\nWarm Down: 5 mins easy jog in Z2.'},
+    {w:12,d:'Wed',s:2,t:'Swim',z:'Steady/Endurance',y:1800,x:'Warm Up: 1x(100FS Z2+100Drill Z2+5secs rest), 2x(50Breast Z2+50Back Z2+5secs rest).\nMain Set: 100FS Z2+100Pull Z2+15s, 200FS Z2+200Pull Z2+15s, 200FS Z2+200Pull Z2+15s, 100FS Z2+100Pull Z2+15s.\nWarm Down: 1x(200Choice Z2).'},
+    {w:12,d:'Thu',s:1,t:'Run',z:'Steady',m:30,x:'Nice easy run in Z2, preferably at race venue. If your race is on Saturday, take Friday as a rest day and replace today\'s run with Friday\'s workout.'},
+    {w:12,d:'Fri',s:1,t:'Bike',z:'Steady',m:30,x:'Ride on your race day bike, all in Z2. Preferably on the race route. Just to check your bike is working OK and to get a feel for the route.'},
+    {w:12,d:'Fri',s:2,t:'Open Water Swim',z:'Steady/Endurance',y:1500,x:'Easy/steady swim in Z2. Preferably at your race destination. Just to get a feel for the conditions.'},
+    {w:12,d:'Sat',s:1,t:'Rest Day',z:'',m:null,x:'Rest up — race day is tomorrow.'},
+    {w:12,d:'Sun',s:1,t:'Race Day',z:'',m:null,x:'Good luck for your event! We\'d love to hear about your training journey and race day experience.'},
+  ];
+
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const $ = (id) => document.getElementById(id);
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function loadJSON(k, f) { try { return JSON.parse(localStorage.getItem(k)) || f; } catch (e) { return f; } }
+  function saveJSON(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+  // Swim durations are given as distance, not time — estimate at a
+  // moderate ~40 yards/min pace including rest intervals, rounded to
+  // the nearest 5 minutes. This is a rough estimate, not measured —
+  // drag the block if a session runs long or short in practice.
+  function swimMinutes(yards) {
+    if (!yards) return null;
+    return Math.max(25, Math.round(yards / 40 / 5) * 5);
+  }
+  function sessionMinutes(p) { return p.m != null ? p.m : swimMinutes(p.y); }
+  function classify(t) {
+    if (/^Run/i.test(t)) return 'run';
+    if (/^Bike/i.test(t)) return 'bike';
+    if (/swim/i.test(t)) return 'swim';
+    if (/strength/i.test(t)) return 'strength';
+    return 'other';
+  }
+  function isRest(t) { return /rest day/i.test(t); }
+  function isRace(t) { return /race day/i.test(t); }
+  function isOffBike(t) { return /off the bike/i.test(t); }
+  function isSwimType(t) { return /swim/i.test(t) && !/open water/i.test(t); }
+
+  // ---------- Scheduling rules ----------
+  // Weekdays default to evenings (after work). Weekday swims prefer the
+  // 11:00-13:00 lunch window. Only short (<=30 min) weekday sessions use
+  // the 6:30-8:30 morning gap. Weekends start the main session at 8 AM.
+  // "Run Off the Bike" always chains straight after that day's bike.
+  const WORK_START = 8 * 60 + 30, EVENING_START = 18 * 60;
+  const LUNCH_START = 11 * 60, LUNCH_END = 13 * 60;
+  const MORNING_EARLIEST = 6 * 60 + 30;
+  const WEEKEND_START = 8 * 60;
+
+  function isWeekend(d) { return d === 'Sat' || d === 'Sun'; }
+
+  function scheduleDay(daySessions) {
+    // daySessions: plan entries for one date, sorted by s (1, then 2).
+    const out = [];
+    let prevEnd = null;
+    daySessions.forEach((p) => {
+      const dur = sessionMinutes(p);
+      let start = null;
+      if (isRest(p.t) || isRace(p.t)) {
+        start = null;
+      } else if (isOffBike(p.t) && prevEnd != null) {
+        start = prevEnd + 5;
+      } else if (isWeekend(p.d)) {
+        start = out.length === 0 ? WEEKEND_START : (prevEnd != null ? prevEnd + 30 : 10 * 60);
+      } else if (isSwimType(p.t) && dur != null && dur <= 120) {
+        start = Math.max(LUNCH_START, Math.min(12 * 60 - Math.round(dur / 2), LUNCH_END - dur));
+      } else if (dur != null && dur <= 30) {
+        start = Math.max(MORNING_EARLIEST, WORK_START - dur - 10);
+      } else {
+        start = EVENING_START;
+      }
+      if (start != null && dur != null) prevEnd = start + dur;
+      out.push({ start, dur });
+    });
+    return out;
+  }
+
+  function addDays(dateStr, n) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d + n);
+    return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+  }
+  function nextMonday() {
+    const now = new Date();
+    const dow = now.getDay(); // 0=Sun..6=Sat
+    const d = new Date(now);
+    if (dow !== 1) d.setDate(d.getDate() + ((8 - dow) % 7)); // today if Monday, else the coming Monday
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  // Resolve the full PLAN into concrete {id, date, start, dur, ...} sessions
+  // for a given Week-1-Monday start date, then apply any saved overrides
+  // (from dragging or status changes) on top.
+  function resolveSchedule(startDate) {
+    const overrides = loadJSON('ironman:overrides', {});
+    const byWeekDay = {};
+    PLAN.forEach((p) => {
+      const key = p.w + '_' + p.d;
+      (byWeekDay[key] = byWeekDay[key] || []).push(p);
+    });
+    const resolved = [];
+    Object.keys(byWeekDay).forEach((key) => {
+      const sessions = byWeekDay[key].slice().sort((a, b) => a.s - b.s);
+      const dow = sessions[0].d;
+      const week = sessions[0].w;
+      const dateOffset = (week - 1) * 7 + DAYS.indexOf(dow);
+      const date = addDays(startDate, dateOffset);
+      const times = scheduleDay(sessions);
+      sessions.forEach((p, i) => {
+        const id = 'w' + p.w + p.d + 's' + p.s;
+        const ov = overrides[id] || {};
+        resolved.push({
+          id, week: p.w, dow: p.d, session: p.s, title: p.t, zone: p.z, detail: p.x,
+          type: classify(p.t), durMin: sessionMinutes(p),
+          date: ov.date || date,
+          startMin: ov.start != null ? ov.start : times[i].start,
+          done: ov.done !== undefined ? ov.done : null,
+        });
+      });
+    });
+    return resolved;
+  }
+
+  function saveOverride(id, patch) {
+    const overrides = loadJSON('ironman:overrides', {});
+    overrides[id] = Object.assign({}, overrides[id] || {}, patch);
+    saveJSON('ironman:overrides', overrides);
+  }
+
+  // ---------- Rendering ----------
+  const GRID_START_MIN = 5 * 60, GRID_END_MIN = 22 * 60;
+  const HOUR_PX = 42;
+  const PX_PER_MIN = HOUR_PX / 60;
+
+  let ALL_SESSIONS = [];
+  let viewWeekStart = null; // Monday date string of the currently-viewed week
+
+  function mondayOf(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    const dow = (dt.getDay() + 6) % 7; // 0=Mon
+    dt.setDate(dt.getDate() - dow);
+    return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+  }
+  function fmtClock(min) {
+    let h = Math.floor(min / 60), m = min % 60;
+    const ap = h >= 12 ? 'PM' : 'AM'; let h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + pad2(m) + ' ' + ap;
+  }
+  function fmtDayHeader(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()];
+    return mo + ' ' + dt.getDate();
+  }
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  function buildHours() {
+    const wrap = $('ipHours');
+    wrap.innerHTML = '';
+    wrap.style.height = ((GRID_END_MIN - GRID_START_MIN) * PX_PER_MIN + 26) + 'px';
+    for (let m = GRID_START_MIN; m <= GRID_END_MIN; m += 60) {
+      const lbl = document.createElement('div');
+      lbl.className = 'ip-hour-label';
+      lbl.style.top = (26 + (m - GRID_START_MIN) * PX_PER_MIN) + 'px';
+      lbl.textContent = fmtClock(m).replace(':00', '');
+      wrap.appendChild(lbl);
+    }
+  }
+
+  function weekPct(weekSessions) {
+    const trackable = weekSessions.filter(s => s.type !== 'other' || (!isRest(s.title) && !isRace(s.title)));
+    const real = trackable.filter(s => !isRest(s.title) && !isRace(s.title));
+    if (!real.length) return 0;
+    const done = real.filter(s => s.done === true).length;
+    return Math.round((done / real.length) * 100);
+  }
+
+  function openDetail(s) {
+    $('ipDetailCard').style.display = '';
+    $('ipDetailTitle').textContent = s.title + (s.zone ? ' — ' + s.zone : '') + ' · ' + s.date + (s.startMin != null ? ' · ' + fmtClock(s.startMin) : '');
+    $('ipDetailBody').textContent = s.detail || '';
+  }
+
+  function renderWeek() {
+    const dates = [];
+    for (let i = 0; i < 7; i++) dates.push(addDays(viewWeekStart, i));
+    const weekSessions = ALL_SESSIONS.filter(s => dates.indexOf(s.date) !== -1);
+
+    $('ipWeekLabel').textContent = 'Week ' + (weekSessions[0] ? weekSessions[0].week : Math.round((new Date(dates[0]) - new Date(viewWeekStart)) / 1)) + ' · ' + fmtDayHeader(dates[0]) + '–' + fmtDayHeader(dates[6]);
+    // Prefer the actual week number from any resolved session that date; fallback via PLAN date math not needed since sessions always exist.
+    const anyWeek = weekSessions.length ? weekSessions[0].week : null;
+    if (anyWeek != null) $('ipWeekLabel').textContent = 'Week ' + anyWeek + ' · ' + fmtDayHeader(dates[0]) + '–' + fmtDayHeader(dates[6]);
+
+    $('ipPct').textContent = weekPct(weekSessions) + '%';
+
+    buildHours();
+    const daysWrap = $('ipDays');
+    daysWrap.innerHTML = '';
+    const today = todayStr();
+
+    dates.forEach((date, di) => {
+      const col = document.createElement('div');
+      col.className = 'ip-day-col';
+      col.dataset.date = date;
+
+      const head = document.createElement('div');
+      head.className = 'ip-day-head' + (date === today ? ' is-today' : '');
+      head.textContent = DAYS[di] + ' ' + fmtDayHeader(date).split(' ')[1];
+      col.appendChild(head);
+
+      const body = document.createElement('div');
+      body.className = 'ip-grid-body';
+      body.style.height = ((GRID_END_MIN - GRID_START_MIN) * PX_PER_MIN) + 'px';
+
+      for (let m = GRID_START_MIN; m <= GRID_END_MIN; m += 60) {
+        const line = document.createElement('div');
+        line.className = 'ip-gridline';
+        line.style.top = ((m - GRID_START_MIN) * PX_PER_MIN) + 'px';
+        body.appendChild(line);
+      }
+
+      const daySessions = weekSessions.filter(s => s.date === date);
+      daySessions.forEach((s) => {
+        if (isRest(s.title) || isRace(s.title)) {
+          const banner = document.createElement('div');
+          banner.className = 'ip-banner ' + (isRace(s.title) ? 'race' : 'rest');
+          banner.textContent = s.title;
+          banner.title = s.detail || '';
+          body.appendChild(banner);
+          return;
+        }
+        if (s.startMin == null) return;
+        const ev = document.createElement('div');
+        let statusCls = '';
+        if (s.done === true) statusCls = ' status-done';
+        else if (s.done === false) statusCls = ' status-missed';
+        ev.className = 'ip-event t-' + s.type + statusCls;
+        ev.style.top = Math.max(0, (s.startMin - GRID_START_MIN) * PX_PER_MIN) + 'px';
+        ev.style.height = Math.max(18, s.durMin * PX_PER_MIN - 2) + 'px';
+        ev.innerHTML = '<div class="ip-event-title">' + s.title.replace(/</g,'&lt;') + '</div><div class="ip-event-time">' + fmtClock(s.startMin) + ' · ' + s.durMin + 'm</div>';
+        wireEvent(ev, s);
+        body.appendChild(ev);
+      });
+
+      col.appendChild(body);
+      daysWrap.appendChild(col);
+    });
+  }
+
+  // ---------- Drag + click-to-cycle-status ----------
+  function wireEvent(el, s) {
+    let moved = false;
+    let startX, startY, origLeftPx, origTopPx;
+
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      moved = false;
+      startX = e.clientX; startY = e.clientY;
+      origLeftPx = el.offsetLeft; origTopPx = el.offsetTop;
+      el.setPointerCapture(e.pointerId);
+      el.classList.add('dragging');
+
+      function onMove(ev) {
+        const dx = ev.clientX - startX, dy = ev.clientY - startY;
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+        if (!moved) return;
+        el.style.zIndex = 30;
+        el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      }
+      function onUp(ev) {
+        el.releasePointerCapture(ev.pointerId);
+        el.removeEventListener('pointermove', onMove);
+        el.removeEventListener('pointerup', onUp);
+        el.classList.remove('dragging');
+        el.style.transform = '';
+
+        if (!moved) {
+          // Plain click — cycle status: null -> done -> missed -> null.
+          const next = s.done === null ? true : (s.done === true ? false : null);
+          s.done = next;
+          saveOverride(s.id, { done: next });
+          openDetail(s);
+          renderWeek();
+          return;
+        }
+
+        const dx = ev.clientX - startX, dy = ev.clientY - startY;
+        const daysWrap = $('ipDays');
+        const wrapRect = daysWrap.getBoundingClientRect();
+        const colWidth = wrapRect.width / 7;
+        const dayCols = Array.prototype.slice.call(daysWrap.querySelectorAll('.ip-day-col'));
+        const origCol = el.closest('.ip-day-col');
+        const origIdx = dayCols.indexOf(origCol);
+        let newIdx = origIdx + Math.round(dx / colWidth);
+        newIdx = Math.max(0, Math.min(6, newIdx));
+        const newDate = dayCols[newIdx].dataset.date;
+
+        let newTop = origTopPx + dy;
+        let newStartMin = GRID_START_MIN + newTop / PX_PER_MIN;
+        newStartMin = Math.round(newStartMin / 15) * 15;
+        newStartMin = Math.max(GRID_START_MIN, Math.min(GRID_END_MIN - s.durMin, newStartMin));
+
+        s.date = newDate; s.startMin = newStartMin;
+        saveOverride(s.id, { date: newDate, start: newStartMin });
+        renderWeek();
+      }
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerup', onUp, { once: true });
+    });
+  }
+
+  // ---------- Boot ----------
+  function boot() {
+    let startDate = loadJSON('ironman:startDate', null);
+    if (!startDate) { startDate = nextMonday(); saveJSON('ironman:startDate', startDate); }
+    $('ipStartDate').value = startDate;
+    ALL_SESSIONS = resolveSchedule(startDate);
+    const t = todayStr();
+    viewWeekStart = mondayOf(t < startDate ? startDate : t);
+    renderWeek();
+  }
+
+  $('ipPrev').addEventListener('click', () => { viewWeekStart = addDays(viewWeekStart, -7); renderWeek(); });
+  $('ipNext').addEventListener('click', () => { viewWeekStart = addDays(viewWeekStart, 7); renderWeek(); });
+  $('ipRegenerate').addEventListener('click', () => {
+    const nv = $('ipStartDate').value;
+    if (!nv) return;
+    if (!confirm('This resets all dragged times/days back to the auto-schedule (done/missed marks are kept). Continue?')) return;
+    const overrides = loadJSON('ironman:overrides', {});
+    Object.keys(overrides).forEach((k) => { delete overrides[k].date; delete overrides[k].start; });
+    saveJSON('ironman:overrides', overrides);
+    saveJSON('ironman:startDate', nv);
+    boot();
+  });
+
+  boot();
+})();
+</script>
+
+<script>
 document.addEventListener('DOMContentLoaded', function () {
   if (typeof initCloudSync !== 'function') return;
   initCloudSync({
     appKey: 'schedule',
-    syncedPrefixes: ['schedule:'],
+    syncedPrefixes: ['schedule:', 'ironman:'],
     onApplied: function () {
       window.dispatchEvent(new Event('storage'));
     }
